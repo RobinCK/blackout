@@ -76,9 +76,14 @@ your operator publishes, and outages are possible outside of it.
 
 ### HACS
 
-1. HACS → Integrations → menu → **Custom repositories**, add `https://github.com/RobinCK/blackout`
-   with the **Integration** category.
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=RobinCK&repository=blackout&category=integration)
+
+1. Open the repository in HACS with the button above, or add it by hand: HACS → menu →
+   **Custom repositories**, `https://github.com/RobinCK/blackout`, category **Integration**.
 2. Install **Blackout** and restart Home Assistant.
+3. Add the integration:
+
+   [![Open your Home Assistant instance and start setting up Blackout.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=blackout)
 
 The cards are served by the integration and added to every dashboard automatically, there is no
 separate Lovelace resource to install. Refresh the browser after an update.
