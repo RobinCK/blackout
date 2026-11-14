@@ -149,7 +149,7 @@ class GridMonitor:
 
         try:
             outages = outages_from_states(changes.get(self.entity_id, []), self._threshold, now, self._min_duration)
-        except Exception:  # noqa: BLE001
+        except Exception:
             _LOGGER.warning("Could not read the outage log of %s from the recorder", self.entity_id, exc_info=True)
             return
 
