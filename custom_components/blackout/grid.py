@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from homeassistant.components.recorder import get_instance, history
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State, callback, split_entity_id
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
@@ -29,7 +29,7 @@ def grid_present(state: State | None, threshold: float) -> bool | None:
 
     value = state.state.strip().lower()
 
-    if state.domain in BINARY_DOMAINS:
+    if split_entity_id(state.entity_id)[0] in BINARY_DOMAINS:
         return value == "on"
 
     try:
@@ -147,7 +147,11 @@ class GridMonitor:
             _LOGGER.debug("Recorder history of %s is unavailable", self.entity_id, exc_info=True)
             return
 
-        states = changes.get(self.entity_id, [])
-        outages = outages_from_states(states, self._threshold, now, self._min_duration)
+        try:
+            outages = outages_from_states(changes.get(self.entity_id, []), self._threshold, now, self._min_duration)
+        except Exception:  # noqa: BLE001
+            _LOGGER.warning("Could not read the outage log of %s from the recorder", self.entity_id, exc_info=True)
+            return
+
         self._history.replace_outages(outages, self.entity_id)
         self._history.save()
