@@ -3,6 +3,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { SCHEDULE_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, socAt, type BatteryState } from '../data/battery';
 import { isPublished, outageWindows, toPercent } from '../data/timeline';
+import { DEFAULT_SCHEDULE_DAYS } from '../defaults';
 import type { DayKey, ScheduleCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
 import type { QueueDay, SlotState } from '../types/payload';
@@ -227,7 +228,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
   private dayKeys(): readonly DayKey[] {
     const days = this.config?.days;
 
-    return days && days.length > 0 ? days : ['today', 'tomorrow'];
+    return days && days.length > 0 ? days : DEFAULT_SCHEDULE_DAYS;
   }
 
   protected renderContent(ctx: RenderContext): TemplateResult {

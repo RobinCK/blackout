@@ -1,11 +1,18 @@
 import { css, html, LitElement, nothing, type TemplateResult } from 'lit';
 import { property, state } from 'lit/decorators.js';
 
+import { BATTERY_DEFAULTS } from '../defaults';
 import { createTranslator, type Translator } from '../i18n';
 import type { BaseCardConfig, BatteryConfig } from '../types/config';
 import type { HassEntity, HomeAssistant } from '../types/ha';
 import { loadHaComponents } from './load-ha-components';
-import { BATTERY_SENSORS, layoutFor, type BatterySensor, type HaFormSchema } from './schema';
+import {
+  layoutFor,
+  stripDefaults,
+  type BatteryLayout,
+  type BatterySensor,
+  type HaFormSchema,
+} from './schema';
 
 interface ValueChangedEvent extends Event {
   readonly detail: { readonly value: unknown };
@@ -71,6 +78,12 @@ export class BlackoutCardEditor extends LitElement {
       gap: 12px;
       padding: 8px 0 4px;
     }
+
+    .hint {
+      color: var(--secondary-text-color);
+      font-size: 13px;
+      line-height: 1.4;
+    }
   `;
 
   @property({ attribute: false }) accessor hass: HomeAssistant | undefined;
@@ -103,7 +116,15 @@ export class BlackoutCardEditor extends LitElement {
       return nothing;
     }
 
-    const layout = layoutFor(config.type, (key) => this.t(key));
+    const layout = layoutFor(config.type, config, (key) => this.t(key));
+    const data = { ...layout.defaults, ...config };
+    const onChange = (value: EditableConfig): void => {
+      this.commit({
+        ...stripDefaults(value, layout.defaults),
+        entity: config.entity,
+        battery: config.battery,
+      });
+    };
 
     return html`<div class="editor">
       ${this.renderPicker({
@@ -115,18 +136,14 @@ export class BlackoutCardEditor extends LitElement {
           this.commit({ ...config, entity });
         },
       })}
-      ${this.renderForm(layout.main, config, (value) => {
-        this.commit({ ...value, entity: config.entity, battery: config.battery });
-      })}
+      ${this.renderForm(layout.main, data, onChange)}
       ${layout.battery ? this.renderBattery(layout.battery, config.battery ?? {}) : nothing}
-      ${this.renderForm(layout.advanced, config, (value) => {
-        this.commit({ ...config, ...value });
-      })}
+      ${this.renderForm(layout.advanced, data, onChange)}
     </div>`;
   }
 
-  private renderBattery(schema: readonly HaFormSchema[], battery: BatteryConfig): TemplateResult {
-    const count = BATTERY_SENSORS.filter((key) => battery[key]).length;
+  private renderBattery(layout: BatteryLayout, battery: BatteryConfig): TemplateResult {
+    const count = layout.sensors.filter((key) => battery[key]).length;
 
     return html`<ha-expansion-panel
       outlined
@@ -135,7 +152,8 @@ export class BlackoutCardEditor extends LitElement {
       .expanded=${count > 0}
     >
       <div class="panel-content">
-        ${BATTERY_SENSORS.map((key) =>
+        <div class="hint">${layout.hint}</div>
+        ${layout.sensors.map((key) =>
           this.renderPicker({
             label: this.t(`editor.${key}`),
             value: battery[key],
@@ -146,8 +164,8 @@ export class BlackoutCardEditor extends LitElement {
             },
           }),
         )}
-        ${this.renderForm(schema, battery, (value) => {
-          this.updateBattery({ ...battery, ...value });
+        ${this.renderForm(layout.schema, { ...BATTERY_DEFAULTS, ...battery }, (value) => {
+          this.updateBattery(stripDefaults(value, BATTERY_DEFAULTS));
         })}
       </div>
     </ha-expansion-panel>`;

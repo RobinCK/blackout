@@ -10,6 +10,7 @@ import {
   type StreakRecord,
 } from '../data/statistics';
 import { HOUR_MS } from '../data/timeline';
+import { DEFAULT_RECORD_COLUMNS } from '../defaults';
 import type {
   OutageRecordItem,
   RecordItem,
@@ -182,7 +183,7 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
   }
 
   private renderTiles(tiles: readonly Tile[]): TemplateResult {
-    const columns = this.config?.columns ?? 2;
+    const columns = this.config?.columns ?? DEFAULT_RECORD_COLUMNS;
 
     return html`<div class="tiles" style=${styleMap({ '--record-columns': String(columns) })}>
       ${tiles.map(

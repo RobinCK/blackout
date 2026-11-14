@@ -154,6 +154,9 @@ export const uk: Dictionary = {
   'editor.items': 'Рекорди',
   'editor.battery': 'АКБ',
   'editor.advanced': 'Додатково',
+  'editor.battery_hint.status': 'Прогноз заряду на таймлайні та показники АКБ.',
+  'editor.battery_hint.schedule': 'Очікуваний заряд АКБ на початок кожного наступного відключення.',
+  'editor.battery_hint.week': 'Очікуваний заряд АКБ і час роботи на наступне відключення.',
   'editor.soc': 'Рівень заряду',
   'editor.power': 'Потужність АКБ',
   'editor.load': 'Потужність навантаження',
@@ -172,6 +175,7 @@ export const uk: Dictionary = {
   'editor.sensors_few': '{count} сенсори',
   'editor.sensors_many': '{count} сенсорів',
   'editor.sensors_other': '{count} сенсора',
+  'editor.helper.capacity': "Обов'язково разом зі станом заряду",
   'editor.helper.entity': 'Будь-яка сутність черги Blackout, наприклад сенсор стану світла',
   'editor.helper.labels':
     'Ключі вбудованих текстів зі своїм текстом, наприклад "hero.outage_in": "Вимкнуть через"',

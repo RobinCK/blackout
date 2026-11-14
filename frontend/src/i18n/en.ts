@@ -150,6 +150,9 @@ export const en = {
   'editor.items': 'Records',
   'editor.battery': 'Battery',
   'editor.advanced': 'Advanced',
+  'editor.battery_hint.status': 'Battery forecast on the timeline and battery statistics.',
+  'editor.battery_hint.schedule': 'Expected battery level at the start of each upcoming outage.',
+  'editor.battery_hint.week': 'Expected battery level and runtime for the next outage.',
   'editor.soc': 'State of charge',
   'editor.power': 'Battery power',
   'editor.load': 'Load power',
@@ -167,6 +170,7 @@ export const en = {
   'editor.sensors_one': '{count} sensor',
   'editor.sensors_other': '{count} sensors',
   'editor.helper.entity': 'Any entity of a Blackout queue, for example its power status sensor',
+  'editor.helper.capacity': 'Required together with the state of charge',
   'editor.helper.labels':
     'Keys of the built-in texts with your own text, for example "hero.outage_in": "Off in"',
   'editor.helper.colors': 'on, off, possible, emergency, battery, unknown',

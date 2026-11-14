@@ -1,4 +1,5 @@
 import { RECORDS_CARD_TYPE, SCHEDULE_CARD_TYPE, STATUS_CARD_TYPE, WEEK_CARD_TYPE } from '../const';
+import { CARD_DEFAULTS, type ConfigValues } from '../defaults';
 import { LANGUAGES } from '../i18n';
 
 export interface HaFormSelectorField {
@@ -17,18 +18,30 @@ export interface HaFormExpandable {
 
 export type HaFormSchema = HaFormSelectorField | HaFormExpandable;
 
+export type BatterySensor = 'soc' | 'power' | 'load';
+
+type Flag = 'show_header' | 'show_timeline' | 'show_stats' | 'show_windows' | 'show_next';
+
+export interface EditorConfig extends Partial<Readonly<Record<Flag, boolean>>> {
+  readonly entity?: string;
+  readonly battery?: { readonly power?: string };
+}
+
+export interface BatteryLayout {
+  readonly sensors: readonly BatterySensor[];
+  readonly schema: readonly HaFormSchema[];
+  readonly hint: string;
+}
+
 export interface EditorLayout {
   readonly entityRequired: boolean;
+  readonly defaults: ConfigValues;
   readonly main: readonly HaFormSchema[];
-  readonly battery: readonly HaFormSchema[] | null;
+  readonly battery: BatteryLayout | null;
   readonly advanced: readonly HaFormSchema[];
 }
 
 type Translate = (key: string) => string;
-
-export const BATTERY_SENSORS = ['soc', 'power', 'load'] as const;
-
-export type BatterySensor = (typeof BATTERY_SENSORS)[number];
 
 const boolean = (name: string): HaFormSelectorField => ({ name, selector: { boolean: {} } });
 
@@ -57,16 +70,35 @@ const select = (
   },
 });
 
-function batteryFields(t: Translate): readonly HaFormSchema[] {
-  return [
-    number('capacity', 0, 1000, 0.1),
-    number('reserve', 0, 100),
-    select('power_positive', ['discharge', 'charge'], t),
-    number('morning_hour', 0, 23),
-  ];
+const enabled = (config: EditorConfig, key: Flag): boolean => config[key] !== false;
+
+const when = (condition: boolean, ...fields: readonly HaFormSchema[]): readonly HaFormSchema[] =>
+  condition ? fields : [];
+
+function header(config: EditorConfig, ...extra: readonly HaFormSchema[]): readonly HaFormSchema[] {
+  return [boolean('show_header'), ...when(enabled(config, 'show_header'), text('title'), ...extra)];
 }
 
-function advanced(t: Translate): readonly HaFormSchema[] {
+function battery(
+  config: EditorConfig,
+  t: Translate,
+  sensors: readonly BatterySensor[],
+  hint: string,
+  ...extra: readonly HaFormSchema[]
+): BatteryLayout {
+  return {
+    sensors,
+    hint,
+    schema: [
+      number('capacity', 0, 1000, 0.1),
+      number('reserve', 0, 100),
+      ...when(Boolean(config.battery?.power), select('power_positive', ['discharge', 'charge'], t)),
+      ...extra,
+    ],
+  };
+}
+
+function advanced(t: Translate, clickable: boolean): readonly HaFormSchema[] {
   return [
     {
       type: 'expandable',
@@ -84,7 +116,7 @@ function advanced(t: Translate): readonly HaFormSchema[] {
           },
         },
         text('time_zone'),
-        select('tap_action', ['more-info', 'none'], t),
+        ...when(clickable, select('tap_action', ['more-info', 'none'], t)),
         object('labels'),
         object('colors'),
       ],
@@ -92,63 +124,122 @@ function advanced(t: Translate): readonly HaFormSchema[] {
   ];
 }
 
-const header = (): HaFormSchema[] => [text('title'), boolean('show_header')];
+function statusLayout(
+  config: EditorConfig,
+  t: Translate,
+): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  const timeline = enabled(config, 'show_timeline');
+  const stats = enabled(config, 'show_stats');
 
-export function layoutFor(type: string, t: Translate): EditorLayout {
-  const cardType = type.replace(/^custom:/, '');
-  const base = { entityRequired: true, advanced: advanced(t) };
+  return {
+    entityRequired: true,
+    main: [
+      ...header(config, boolean('show_badge')),
+      boolean('show_timeline'),
+      ...when(timeline, number('timeline_hours', 2, 48), number('timeline_offset', 0, 24)),
+      boolean('show_stats'),
+      ...when(stats, object('stats')),
+    ],
+    battery:
+      timeline || stats
+        ? battery(
+            config,
+            t,
+            ['soc', 'power', 'load'],
+            t('editor.battery_hint.status'),
+            ...when(stats, number('morning_hour', 0, 23)),
+          )
+        : null,
+  };
+}
 
+function scheduleLayout(
+  config: EditorConfig,
+  t: Translate,
+): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  const windows = enabled(config, 'show_windows');
+
+  return {
+    entityRequired: true,
+    main: [
+      ...header(config),
+      select('days', ['today', 'tomorrow'], t, true),
+      boolean('show_source'),
+      boolean('show_now'),
+      boolean('show_legend'),
+      boolean('show_windows'),
+      boolean('show_totals'),
+    ],
+    battery: windows
+      ? battery(config, t, ['soc', 'power'], t('editor.battery_hint.schedule'))
+      : null,
+  };
+}
+
+function weekLayout(
+  config: EditorConfig,
+  t: Translate,
+): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  const next = enabled(config, 'show_next');
+
+  return {
+    entityRequired: true,
+    main: [
+      ...header(config, boolean('show_badge')),
+      number('days', 1, 90),
+      boolean('show_stats'),
+      boolean('show_schedule'),
+      boolean('show_legend'),
+      boolean('show_next'),
+    ],
+    battery: next
+      ? battery(config, t, ['soc', 'power', 'load'], t('editor.battery_hint.week'))
+      : null,
+  };
+}
+
+function recordsLayout(config: EditorConfig): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  return {
+    entityRequired: false,
+    main: [...header(config, text('since')), number('columns', 1, 4), object('items')],
+    battery: null,
+  };
+}
+
+function cardLayout(
+  cardType: string,
+  config: EditorConfig,
+  t: Translate,
+): Omit<EditorLayout, 'defaults' | 'advanced'> {
   switch (cardType) {
     case STATUS_CARD_TYPE:
-      return {
-        ...base,
-        main: [
-          ...header(),
-          boolean('show_badge'),
-          boolean('show_timeline'),
-          boolean('show_stats'),
-          number('timeline_hours', 2, 48),
-          number('timeline_offset', 0, 24),
-          object('stats'),
-        ],
-        battery: batteryFields(t),
-      };
+      return statusLayout(config, t);
     case SCHEDULE_CARD_TYPE:
-      return {
-        ...base,
-        main: [
-          ...header(),
-          select('days', ['today', 'tomorrow'], t, true),
-          boolean('show_source'),
-          boolean('show_now'),
-          boolean('show_legend'),
-          boolean('show_windows'),
-          boolean('show_totals'),
-        ],
-        battery: batteryFields(t),
-      };
+      return scheduleLayout(config, t);
     case WEEK_CARD_TYPE:
-      return {
-        ...base,
-        main: [
-          ...header(),
-          number('days', 1, 90),
-          boolean('show_badge'),
-          boolean('show_stats'),
-          boolean('show_schedule'),
-          boolean('show_legend'),
-          boolean('show_next'),
-        ],
-        battery: batteryFields(t),
-      };
+      return weekLayout(config, t);
     case RECORDS_CARD_TYPE:
-      return {
-        ...base,
-        entityRequired: false,
-        main: [...header(), text('since'), number('columns', 1, 4), object('items')],
-        battery: null,
-      };
+      return recordsLayout(config);
     default:
-      return { ...base, main: header(), battery: null };
+      return { entityRequired: true, main: header(config), battery: null };
   }
+}
+
+export function layoutFor(type: string, config: EditorConfig, t: Translate): EditorLayout {
+  const cardType = type.replace(/^custom:/, '');
+  const clickable = enabled(config, 'show_header') && Boolean(config.entity);
+
+  return {
+    ...cardLayout(cardType, config, t),
+    defaults: CARD_DEFAULTS[cardType] ?? {},
+    advanced: advanced(t, clickable),
+  };
+}
+
+export function stripDefaults<T extends object>(value: T, defaults: ConfigValues): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      ([key, item]) => !(key in defaults) || JSON.stringify(item) !== JSON.stringify(defaults[key]),
+    ),
+  ) as T;
 }

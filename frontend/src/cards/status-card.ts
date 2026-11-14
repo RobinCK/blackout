@@ -10,6 +10,7 @@ import {
   type BatteryState,
 } from '../data/battery';
 import { clipSegments, HOUR_MS, slotSegments, toPercent } from '../data/timeline';
+import { DEFAULT_TIMELINE_HOURS, DEFAULT_TIMELINE_OFFSET } from '../defaults';
 import { barStyles } from '../styles';
 import type { StatGroup, StatKey, StatusCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
@@ -32,8 +33,6 @@ import {
 } from './parts';
 import { findQueueEntity } from './stub';
 
-const DEFAULT_HOURS = 8;
-const DEFAULT_OFFSET = 1;
 const LONG_LABEL_LIMIT = 35;
 
 const DEFAULT_STATS: Readonly<Record<StatGroup, readonly StatKey[]>> = {
@@ -335,8 +334,8 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
 
   private renderTimeline(ctx: RenderContext, battery: BatteryState | null): TemplateResult {
     const { payload, now, t, f } = ctx;
-    const hours = this.config?.timeline_hours ?? DEFAULT_HOURS;
-    const offset = this.config?.timeline_offset ?? DEFAULT_OFFSET;
+    const hours = this.config?.timeline_hours ?? DEFAULT_TIMELINE_HOURS;
+    const offset = this.config?.timeline_offset ?? DEFAULT_TIMELINE_OFFSET;
     const from = Math.floor((now - offset * HOUR_MS) / HOUR_MS) * HOUR_MS;
     const to = from + hours * HOUR_MS;
     const segments: BarSegment[] = clipSegments(slotSegments(payload.days), from, to).map(

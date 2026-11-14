@@ -3,6 +3,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { WEEK_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, runtimeMs, socAt } from '../data/battery';
 import { HOUR_MS, outageWindows, toPercent } from '../data/timeline';
+import { DEFAULT_WEEK_DAYS } from '../defaults';
 import { barStyles } from '../styles';
 import type { WeekCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
@@ -19,7 +20,6 @@ import {
 } from './parts';
 import { findQueueEntity } from './stub';
 
-const DEFAULT_DAYS = 7;
 const AXIS = [0, 6, 12, 18, 24];
 
 export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
@@ -126,7 +126,7 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
   }
 
   protected override historyDays(): number {
-    return Math.min(90, Math.max(1, this.config?.days ?? DEFAULT_DAYS));
+    return Math.min(90, Math.max(1, this.config?.days ?? DEFAULT_WEEK_DAYS));
   }
 
   protected override extraEntities(): readonly string[] {

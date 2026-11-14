@@ -1,9 +1,7 @@
+import { DEFAULT_MORNING_HOUR, DEFAULT_RESERVE } from '../defaults';
 import type { BatteryConfig } from '../types/config';
 import type { HassEntity, HomeAssistant } from '../types/ha';
 import { HOUR_MS } from './timeline';
-
-export const DEFAULT_RESERVE = 10;
-export const DEFAULT_MORNING_HOUR = 7;
 
 export interface BatteryState {
   readonly soc: number;

@@ -180,7 +180,16 @@ battery:
 ```
 
 The forecast assumes the current battery power until the outage starts (or until power comes back,
-if it is off now) and the current load during the outage.
+if it is off now) and the current load during the outage. `soc` and `capacity` are required.
+
+| Card | Shows | Uses |
+| --- | --- | --- |
+| Status | forecast on the timeline, battery statistics | all options |
+| Schedule | level at the start of each upcoming outage window | `soc`, `power`, `capacity`, `reserve`, `power_positive` |
+| Week | level and runtime for the next outage | all options except `morning_hour` |
+
+The visual editor shows only the options that change the card: for example, the battery section of
+the schedule card disappears when `show_windows` is off, and the title when the header is hidden.
 
 ### Status card
 
