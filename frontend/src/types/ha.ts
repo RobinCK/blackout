@@ -30,8 +30,14 @@ export interface HassMessage {
   readonly [key: string]: unknown;
 }
 
+export interface EntityRegistryDisplayEntry {
+  readonly entity_id: string;
+  readonly platform?: string;
+}
+
 export interface HomeAssistant {
   readonly states: HassEntities;
+  readonly entities?: Readonly<Record<string, EntityRegistryDisplayEntry>>;
   readonly locale?: HassLocale;
   readonly language?: string;
   callWS<T>(message: HassMessage): Promise<T>;

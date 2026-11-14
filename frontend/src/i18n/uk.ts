@@ -168,6 +168,10 @@ export const uk: Dictionary = {
   'editor.option.none': 'Нічого',
   'editor.option.today': 'Сьогодні',
   'editor.option.tomorrow': 'Завтра',
+  'editor.sensors_one': '{count} сенсор',
+  'editor.sensors_few': '{count} сенсори',
+  'editor.sensors_many': '{count} сенсорів',
+  'editor.sensors_other': '{count} сенсора',
   'editor.helper.entity': 'Будь-яка сутність черги Blackout, наприклад сенсор стану світла',
   'editor.helper.labels':
     'Ключі вбудованих текстів зі своїм текстом, наприклад "hero.outage_in": "Вимкнуть через"',

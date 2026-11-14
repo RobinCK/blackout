@@ -164,6 +164,8 @@ export const en = {
   'editor.option.none': 'Nothing',
   'editor.option.today': 'Today',
   'editor.option.tomorrow': 'Tomorrow',
+  'editor.sensors_one': '{count} sensor',
+  'editor.sensors_other': '{count} sensors',
   'editor.helper.entity': 'Any entity of a Blackout queue, for example its power status sensor',
   'editor.helper.labels':
     'Keys of the built-in texts with your own text, for example "hero.outage_in": "Off in"',
