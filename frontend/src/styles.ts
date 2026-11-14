@@ -49,6 +49,7 @@ export const tokens = css`
 
 export const cardStyles = css`
   ha-card {
+    position: relative;
     box-sizing: border-box;
     height: 100%;
     padding: 18px 20px 16px;
@@ -264,6 +265,57 @@ export const cardStyles = css`
     background: var(--bo-hatch-muted);
   }
 
+  .hover-band {
+    position: absolute;
+    z-index: 1;
+    border-radius: 3px;
+    box-shadow: 0 0 0 1.5px var(--bo-text);
+    pointer-events: none;
+  }
+
+  .hover-tip {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 10px;
+    border: 1px solid var(--bo-divider);
+    border-radius: 8px;
+    background: var(--card-background-color, var(--ha-card-background, #1c1c1e));
+    box-shadow: 0 6px 18px rgb(0 0 0 / 30%);
+    color: var(--bo-muted);
+    font-size: 12px;
+    line-height: 16px;
+    white-space: nowrap;
+    pointer-events: none;
+    transform: translate(-50%, calc(-100% - 8px));
+  }
+
+  .hover-tip.start {
+    transform: translate(-16px, calc(-100% - 8px));
+  }
+
+  .hover-tip.end {
+    transform: translate(calc(-100% + 16px), calc(-100% - 8px));
+  }
+
+  .hover-title {
+    color: var(--bo-text);
+    font-family: var(--bo-mono);
+    font-weight: 600;
+  }
+
+  .hover-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .hover-line .swatch {
+    flex: none;
+  }
+
   .message {
     padding: 8px 0;
     color: var(--bo-muted);
@@ -345,6 +397,7 @@ export const barStyles = css`
     border-radius: 1px;
     background: var(--bo-text);
     transform: translateX(-1px);
+    pointer-events: none;
   }
 
   .bar-text {

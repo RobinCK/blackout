@@ -90,6 +90,9 @@ export const uk: Dictionary = {
   'legend.by_schedule': 'за графіком',
   'legend.emergency': 'аварійні',
 
+  'hover.schedule': 'Графік',
+  'hover.no_power': 'світла немає',
+
   'week.grid_on': 'Мережа є',
   'week.grid_off': 'Мережі немає',
   'week.next_by_schedule': 'Наступне за графіком',

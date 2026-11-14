@@ -88,6 +88,9 @@ export const en = {
   'legend.by_schedule': 'by schedule',
   'legend.emergency': 'emergency',
 
+  'hover.schedule': 'Schedule',
+  'hover.no_power': 'no power',
+
   'week.grid_on': 'Grid on',
   'week.grid_off': 'No grid',
   'week.next_by_schedule': 'Next by schedule',

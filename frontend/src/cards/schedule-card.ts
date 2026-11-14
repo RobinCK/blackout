@@ -2,12 +2,13 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 
 import { SCHEDULE_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, socAt, type BatteryState } from '../data/battery';
-import { isPublished, outageWindows, toPercent } from '../data/timeline';
+import { isPublished, outageWindows, SLOT_MS, toPercent } from '../data/timeline';
 import { DEFAULT_SCHEDULE_DAYS } from '../defaults';
 import type { DayKey, ScheduleCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
 import type { QueueDay, SlotState } from '../types/payload';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import { describeSlot, type BarHover } from './hover';
 import { findDay, hoursParts, renderStats, text, windowText, type StatView } from './parts';
 import { findQueueEntity } from './stub';
 
@@ -116,6 +117,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
         border-radius: 1px;
         background: var(--bo-text);
         transform: translateX(-1px);
+        pointer-events: none;
       }
 
       .axis {
@@ -283,24 +285,55 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
     const nowPercent = day
       ? toPercent(now, Date.parse(day.start), Date.parse(day.start) + 24 * 3_600_000)
       : 0;
+    const hover = day ? this.cellsHover(ctx, day) : undefined;
 
     return html`<div class="day">
       <div class="day-name">
         <strong>${t(`day.${key}`)}</strong>
         <span>${day ? f.dayDate(day.start) : ''}</span>
       </div>
-      <div class="cells">
+      <div
+        class="cells"
+        @pointermove=${hover?.move}
+        @pointerdown=${hover?.move}
+        @pointerleave=${hover?.leave}
+      >
         ${HOURS.map(
           (hour) =>
             html`<div class="cell">
-              <span class="fill-${slots[hour * 2] ?? 'unknown'}"></span>
-              <span class="fill-${slots[hour * 2 + 1] ?? 'unknown'}"></span>
+              <span class="fill-${slots[hour * 2] ?? 'unknown'}" data-slot=${hour * 2}></span>
+              <span
+                class="fill-${slots[hour * 2 + 1] ?? 'unknown'}"
+                data-slot=${hour * 2 + 1}
+              ></span>
             </div>`,
         )}
         ${published ? nothing : html`<span class="overlay">${t('schedule.not_published')}</span>`}
         ${showNow ? html`<span class="now" style="left:${nowPercent}%"></span>` : nothing}
       </div>
     </div>`;
+  }
+
+  private cellsHover(ctx: RenderContext, day: QueueDay): BarHover {
+    const start = Date.parse(day.start);
+
+    return {
+      move: (event) => {
+        const target = event.target instanceof Element ? event.target.closest('[data-slot]') : null;
+
+        if (!(target instanceof HTMLElement)) {
+          return;
+        }
+
+        const slot = start + Number(target.dataset.slot) * SLOT_MS;
+
+        this.showHover(
+          target.getBoundingClientRect(),
+          describeSlot(ctx, slot, { title: windowText(ctx.f, slot, slot + SLOT_MS), grid: false }),
+        );
+      },
+      leave: this.hideHover,
+    };
   }
 
   private renderLegend(ctx: RenderContext, states: ReadonlySet<string>): TemplateResult {

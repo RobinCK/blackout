@@ -2,13 +2,14 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 
 import { WEEK_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, runtimeMs, socAt } from '../data/battery';
-import { HOUR_MS, outageWindows, toPercent } from '../data/timeline';
+import { HOUR_MS, outageWindows, SLOT_MS, toPercent } from '../data/timeline';
 import { DEFAULT_WEEK_DAYS } from '../defaults';
 import { barStyles } from '../styles';
 import type { WeekCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
 import type { QueueDay } from '../types/payload';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import { describeSlot } from './hover';
 import {
   renderBadge,
   renderBar,
@@ -207,9 +208,21 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
     const marker = isToday
       ? html`<span class="now" style="left:${toPercent(now, from, to)}%"></span>`
       : undefined;
+    const hover = this.barHover(from, to, (slot) =>
+      describeSlot(ctx, slot, {
+        title: `${f.weekday(slot)} · ${windowText(f, slot, slot + SLOT_MS)}`,
+        schedule: showSchedule || !hasGrid,
+      }),
+    );
 
     return html`<div class="row ${isToday ? 'today' : ''}">
-      <span class="row-label">${f.weekday(day.start)}</span>${renderBar(segments, from, to, marker)}
+      <span class="row-label">${f.weekday(day.start)}</span>${renderBar(
+        segments,
+        from,
+        to,
+        marker,
+        hover,
+      )}
     </div>`;
   }
 

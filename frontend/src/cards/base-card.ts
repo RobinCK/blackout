@@ -3,12 +3,14 @@ import { property, state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
 import { QueueController } from '../data/queue-controller';
+import { SLOT_MS, toPercent } from '../data/timeline';
 import { createTranslator, type TranslationParams, type Translator } from '../i18n';
 import { cardStyles, tokens } from '../styles';
 import type { BaseCardConfig, ColorKey } from '../types/config';
 import type { HomeAssistant, LovelaceGridOptions } from '../types/ha';
 import type { QueuePayload } from '../types/payload';
 import { createFormatter, DEFAULT_TIME_ZONE, type Formatter } from '../utils/format';
+import { slotAt, type BarHover, type HoverContent } from './hover';
 
 const COLOR_VARIABLES: Readonly<Record<ColorKey, string>> = {
   on: '--blackout-on-color',
@@ -26,6 +28,21 @@ export interface RenderContext {
   readonly f: Formatter;
 }
 
+interface HoverBand {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+interface HoverView {
+  readonly band: HoverBand;
+  readonly align: 'start' | 'center' | 'end';
+  readonly content: HoverContent;
+}
+
+const TOUCH_HOVER_MS = 2500;
+
 export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElement {
   static override styles = [tokens, cardStyles];
 
@@ -33,10 +50,13 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
 
   @state() protected accessor config: C | undefined;
 
+  @state() private accessor hover: HoverView | null = null;
+
   protected readonly queue = new QueueController(this);
   protected translator: Translator = createTranslator('en');
   protected formatter: Formatter = createFormatter(this.translator);
   private localeKey = '';
+  private hoverTimer: number | undefined;
 
   protected abstract readonly cardSize: number;
 
@@ -142,8 +162,108 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
     };
 
     return html`<ha-card style=${style}
-      >${this.renderHeader(ctx)}${this.renderContent(ctx)}</ha-card
+      >${this.renderHeader(ctx)}${this.renderContent(ctx)}${this.renderHover()}</ha-card
     >`;
+  }
+
+  private renderHover(): TemplateResult | typeof nothing {
+    const hover = this.hover;
+
+    if (!hover) {
+      return nothing;
+    }
+
+    const { band, align, content } = hover;
+
+    return html`<span
+        class="hover-band"
+        style=${styleMap({
+          left: `${band.left}px`,
+          top: `${band.top}px`,
+          width: `${band.width}px`,
+          height: `${band.height}px`,
+        })}
+      ></span>
+      <div
+        class="hover-tip ${align}"
+        style=${styleMap({ left: `${band.left + band.width / 2}px`, top: `${band.top}px` })}
+      >
+        <div class="hover-title">${content.title}</div>
+        ${content.lines.map(
+          (line) =>
+            html`<div class="hover-line">
+              <span class="swatch ${line.swatch}"></span><span>${line.text}</span>
+            </div>`,
+        )}
+      </div>`;
+  }
+
+  protected showHover(target: DOMRectReadOnly, content: HoverContent): void {
+    const card = this.renderRoot.querySelector('ha-card')?.getBoundingClientRect();
+
+    if (!card || target.width <= 0) {
+      return;
+    }
+
+    const band = {
+      left: target.left - card.left,
+      top: target.top - card.top,
+      width: target.width,
+      height: target.height,
+    };
+    const center = (band.left + band.width / 2) / card.width;
+    const current = this.hover;
+
+    window.clearTimeout(this.hoverTimer);
+
+    if (
+      current?.band.left === band.left &&
+      current.band.top === band.top &&
+      current.content.title === content.title
+    ) {
+      return;
+    }
+
+    this.hover = {
+      band,
+      align: center < 0.25 ? 'start' : center > 0.75 ? 'end' : 'center',
+      content,
+    };
+  }
+
+  protected readonly hideHover = (event: PointerEvent): void => {
+    window.clearTimeout(this.hoverTimer);
+
+    if (event.pointerType === 'touch') {
+      this.hoverTimer = window.setTimeout(() => {
+        this.hover = null;
+      }, TOUCH_HOVER_MS);
+
+      return;
+    }
+
+    this.hover = null;
+  };
+
+  protected barHover(from: number, to: number, describe: (slot: number) => HoverContent): BarHover {
+    return {
+      move: (event) => {
+        const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+        if (rect.width <= 0) {
+          return;
+        }
+
+        const ratio = Math.min(Math.max((event.clientX - rect.left) / rect.width, 0), 0.9999);
+        const slot = Math.max(from, slotAt(from + ratio * (to - from)));
+        const end = Math.min(to, slot + SLOT_MS);
+        const left = rect.left + (toPercent(slot, from, to) / 100) * rect.width;
+        const right = rect.left + (toPercent(end, from, to) / 100) * rect.width;
+
+        this.showHover(new DOMRect(left, rect.top, right - left, rect.height), describe(slot));
+      },
+      leave: this.hideHover,
+    };
   }
 
   protected renderWithoutQueue(style: ReturnType<typeof styleMap>): TemplateResult {

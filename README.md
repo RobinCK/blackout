@@ -146,6 +146,9 @@ Every card takes `entity`: any entity of a Blackout queue, usually `sensor.<queu
 Texts are in English and Ukrainian and follow the language of your Home Assistant profile; set
 `language` on a card to fix it.
 
+Hover over a bar (or tap it on a phone) to see the half hour under the pointer, the scheduled
+window it belongs to and, with a grid entity, whether there was power at that time.
+
 ### Common options
 
 | Option | Default | |

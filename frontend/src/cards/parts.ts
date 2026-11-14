@@ -4,6 +4,7 @@ import { HOUR_MS, toPercent, type Segment } from '../data/timeline';
 import type { PowerStatus, QueueDay } from '../types/payload';
 import type { DurationPart, Formatter } from '../utils/format';
 import type { RenderContext } from './base-card';
+import type { BarHover } from './hover';
 
 export type Tone = 'on' | 'off' | 'possible' | 'emergency' | 'muted';
 
@@ -106,8 +107,14 @@ export function renderBar(
   from: number,
   to: number,
   extra?: TemplateResult,
+  hover?: BarHover,
 ): TemplateResult {
-  return html`<div class="bar">
+  return html`<div
+    class="bar ${hover ? 'hoverable' : ''}"
+    @pointermove=${hover?.move}
+    @pointerdown=${hover?.move}
+    @pointerleave=${hover?.leave}
+  >
     ${segments.map((segment) => {
       const left = toPercent(segment.from, from, to);
       const width = toPercent(segment.to, from, to) - left;

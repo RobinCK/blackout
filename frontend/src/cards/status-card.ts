@@ -9,13 +9,14 @@ import {
   socAt,
   type BatteryState,
 } from '../data/battery';
-import { clipSegments, HOUR_MS, slotSegments, toPercent } from '../data/timeline';
+import { clipSegments, HOUR_MS, SLOT_MS, slotSegments, toPercent } from '../data/timeline';
 import { DEFAULT_TIMELINE_HOURS, DEFAULT_TIMELINE_OFFSET } from '../defaults';
 import { barStyles } from '../styles';
 import type { StatGroup, StatKey, StatusCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
 import type { ActualOutage } from '../types/payload';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import { describeSlot } from './hover';
 import {
   durationFromHours,
   findDay,
@@ -364,10 +365,19 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
     const nowMarker = html`<span class="now" style="left:${toPercent(now, from, to)}%"></span>`;
     const forecast = battery ? this.forecast(ctx, battery) : null;
     const ticks = this.ticks(from, to, hours);
+    const hover = this.barHover(from, to, (slot) =>
+      describeSlot(ctx, slot, { title: windowText(f, slot, slot + SLOT_MS), emergency: true }),
+    );
 
     return html`<div class="timeline">
       <div class="row">
-        <span class="row-label">${t('row.grid')}</span>${renderBar(segments, from, to, nowMarker)}
+        <span class="row-label">${t('row.grid')}</span>${renderBar(
+          segments,
+          from,
+          to,
+          nowMarker,
+          hover,
+        )}
       </div>
       ${
         forecast
@@ -384,6 +394,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
                 from,
                 to,
                 this.forecastText(forecast, toPercent(forecast.from, from, to), nowMarker),
+                hover,
               )}
             </div>`
           : nothing
