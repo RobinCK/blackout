@@ -43,6 +43,7 @@ from .models import (
     SlotState,
     empty_slots,
 )
+from .names import EntityNames
 from .regions import Region, get_region
 from .timeline import ScheduledOutage, merged_outages, slot_at
 
@@ -87,6 +88,7 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
         self.history = QueueHistory(hass, subentry.subentry_id)
         self.grid: GridMonitor | None = None
         self.changes: list[DayChange] = []
+        self.names = EntityNames(hass.config.language)
         self.fetches = 0
         self.last_error: str | None = None
         self.last_success: datetime | None = None

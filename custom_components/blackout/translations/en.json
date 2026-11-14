@@ -82,11 +82,15 @@
       "init": {
         "title": "Blackout options",
         "data": {
+          "language": "Language of entity names",
           "scan_interval": "Update interval",
           "history_days": "Keep schedules (days)",
           "outage_log_days": "Keep outage log (days)",
           "min_outage_seconds": "Ignore outages shorter than",
           "emergency_sources": "Emergency outage sources"
+        },
+        "data_description": {
+          "language": "Entity IDs are always created from English names."
         }
       }
     }
@@ -124,6 +128,13 @@
         "ukrenergo": "Ukrenergo grid status by region",
         "yasno": "YASNO day status (Kyiv, Dnipro)",
         "svitlo_live": "svitlo.live emergency flag"
+      }
+    },
+    "language": {
+      "options": {
+        "en": "English",
+        "uk": "Українська",
+        "auto": "Home Assistant language"
       }
     }
   },

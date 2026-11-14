@@ -11,10 +11,11 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import ConfigType
 
 from .card import async_register_card
-from .const import DOMAIN, SUBENTRY_QUEUE
+from .const import DEFAULT_OPTIONS, DOMAIN, SUBENTRY_QUEUE
 from .coordinator import QueueCoordinator
 from .history import QueueHistory
 from .hub import BlackoutHub
+from .names import async_entity_names
 from .websocket import async_register
 
 PLATFORMS: list[Platform] = [
@@ -44,12 +45,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: BlackoutConfigEntry) -> bool:
     runtime = BlackoutRuntime(BlackoutHub(hass))
+    names = await async_entity_names(hass, {**DEFAULT_OPTIONS, **entry.options})
 
     for subentry in entry.subentries.values():
         if subentry.subentry_type != SUBENTRY_QUEUE:
             continue
 
         coordinator = QueueCoordinator(hass, entry, subentry, runtime.hub)
+        coordinator.names = names
         await coordinator.async_prepare()
         await coordinator.async_refresh()
         runtime.coordinators[subentry.subentry_id] = coordinator

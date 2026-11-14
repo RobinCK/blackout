@@ -18,6 +18,11 @@ CONF_HISTORY_DAYS: Final = "history_days"
 CONF_OUTAGE_LOG_DAYS: Final = "outage_log_days"
 CONF_MIN_OUTAGE: Final = "min_outage_seconds"
 CONF_EMERGENCY_SOURCES: Final = "emergency_sources"
+CONF_LANGUAGE: Final = "language"
+
+LANGUAGE_AUTO: Final = "auto"
+LANGUAGES: Final = ("en", "uk")
+DEFAULT_LANGUAGE: Final = "en"
 
 EMERGENCY_UKRENERGO: Final = "ukrenergo"
 EMERGENCY_YASNO: Final = "yasno"
@@ -37,6 +42,7 @@ DEFAULT_OPTIONS: Final = {
     CONF_OUTAGE_LOG_DAYS: DEFAULT_OUTAGE_LOG_DAYS,
     CONF_MIN_OUTAGE: DEFAULT_MIN_OUTAGE,
     CONF_EMERGENCY_SOURCES: DEFAULT_EMERGENCY_SOURCES,
+    CONF_LANGUAGE: DEFAULT_LANGUAGE,
 }
 
 BACKFILL_MAX_DAYS: Final = 30

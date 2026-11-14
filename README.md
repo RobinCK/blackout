@@ -108,6 +108,7 @@ Integration options:
 
 | Option | Default | |
 | --- | --- | --- |
+| Language of entity names | English | English, Українська or the Home Assistant language; entity IDs are always created from English names |
 | Update interval | 5 min | how often sources are asked; shared requests for all queues |
 | Keep schedules | 90 days | schedule history |
 | Keep outage log | 365 days | actual outages |
@@ -116,7 +117,8 @@ Integration options:
 
 ## Entities
 
-Every queue has a device with these entities (names follow the Home Assistant language).
+Every queue has a device with these entities. Names are in English by default, see the **Language of
+entity names** option.
 
 | Entity | |
 | --- | --- |
@@ -141,7 +143,8 @@ Slot codes in attributes and events: `1` power on, `0` outage, `?` possible outa
 ## Cards
 
 Every card takes `entity`: any entity of a Blackout queue, usually `sensor.<queue>_power_status`.
-All texts follow the Home Assistant language (English and Ukrainian are built in).
+Texts are in English and Ukrainian and follow the language of your Home Assistant profile; set
+`language` on a card to fix it.
 
 ### Common options
 
@@ -150,7 +153,7 @@ All texts follow the Home Assistant language (English and Ukrainian are built in
 | `entity` | — | entity of a Blackout queue |
 | `title` | per card | header text; the header is hidden with `show_header: false` |
 | `show_header` | `true` | |
-| `language` | Home Assistant language | `en` or `uk` |
+| `language` | profile language | `en` or `uk` |
 | `time_zone` | `Europe/Kyiv` | time zone of the times shown |
 | `labels` | — | your own texts by key, for example `hero.outage_in: Off in` (keys are in `frontend/src/i18n/en.ts`) |
 | `colors` | theme | `on`, `off`, `possible`, `emergency`, `battery`, `unknown` (any CSS color) |

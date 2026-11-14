@@ -16,8 +16,10 @@ from .models import KYIV, DaySchedule
 from .timeline import ScheduledOutage, current_outage, merged_outages, next_outage
 
 PARALLEL_UPDATES = 0
-SUMMARY_OUTAGE = "Power outage"
-SUMMARY_POSSIBLE = "Possible power outage"
+SUMMARIES = {
+    "en": ("Power outage", "Possible power outage", "Queue {group}"),
+    "uk": ("Відключення світла", "Можливе відключення світла", "Черга {group}"),
+}
 
 
 async def async_setup_entry(
@@ -29,18 +31,21 @@ async def async_setup_entry(
         async_add_entities([QueueCalendar(coordinator)], config_subentry_id=subentry_id)
 
 
-def _event(outage: ScheduledOutage, group: str) -> CalendarEvent:
+def _event(outage: ScheduledOutage, group: str, language: str) -> CalendarEvent:
+    definite, possible, queue = SUMMARIES.get(language, SUMMARIES["en"])
+
     return CalendarEvent(
         start=outage.start,
         end=outage.end,
-        summary=SUMMARY_POSSIBLE if outage.possible else SUMMARY_OUTAGE,
-        description=f"Queue {group}",
+        summary=possible if outage.possible else definite,
+        description=queue.format(group=group),
     )
 
 
 class QueueCalendar(QueueEntity, CalendarEntity):
     def __init__(self, coordinator: QueueCoordinator) -> None:
         super().__init__(coordinator, "schedule")
+        self._language = coordinator.names.language.split("-")[0]
 
     def _outages(self, start: date, end: date) -> list[ScheduledOutage]:
         days: dict[date, DaySchedule] = {}
@@ -62,7 +67,7 @@ class QueueCalendar(QueueEntity, CalendarEntity):
         outages = self.coordinator.outages()
         outage = current_outage(outages, now, possible=True) or next_outage(outages, now, possible=True)
 
-        return _event(outage, self.coordinator.group) if outage else None
+        return _event(outage, self.coordinator.group, self._language) if outage else None
 
     async def async_get_events(
         self, hass: HomeAssistant, start_date: datetime, end_date: datetime
@@ -71,7 +76,7 @@ class QueueCalendar(QueueEntity, CalendarEntity):
         last = end_date.astimezone(KYIV).date()
 
         return [
-            _event(outage, self.coordinator.group)
+            _event(outage, self.coordinator.group, self._language)
             for outage in self._outages(first, last)
             if outage.end > start_date and outage.start < end_date
         ]

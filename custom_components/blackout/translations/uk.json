@@ -82,11 +82,15 @@
       "init": {
         "title": "Параметри Blackout",
         "data": {
+          "language": "Мова назв сутностей",
           "scan_interval": "Інтервал оновлення",
           "history_days": "Зберігати графіки (днів)",
           "outage_log_days": "Зберігати журнал відключень (днів)",
           "min_outage_seconds": "Ігнорувати відключення, коротші за",
           "emergency_sources": "Джерела аварійних відключень"
+        },
+        "data_description": {
+          "language": "Ідентифікатори сутностей завжди створюються з англійських назв."
         }
       }
     }
@@ -124,6 +128,13 @@
         "ukrenergo": "Стан енергосистеми Укренерго по областях",
         "yasno": "Статус дня YASNO (Київ, Дніпро)",
         "svitlo_live": "Прапор аварійних svitlo.live"
+      }
+    },
+    "language": {
+      "options": {
+        "en": "English",
+        "uk": "Українська",
+        "auto": "Мова Home Assistant"
       }
     }
   },

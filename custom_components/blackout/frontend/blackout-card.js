@@ -470,7 +470,8 @@ function t(t,e,o,s,n,r){function a(t){if(void 0!==t&&"function"!=typeof t)throw 
     </ha-card>`}renderContent(t){return this.renderTiles(this.items().map((e,o)=>this.tile(e,o,t.f,t)))}renderTiles(t){const e=this.config?.columns??2;return L`<div class="tiles" style=${wt({"--record-columns":String(e)})}>
       ${t.map(t=>L`<div class="tile">
             <div class="tile-head">
-              <ha-icon .icon=${t.icon}></ha-icon><span>${t.label}</span>
+              <ha-icon .icon=${t.icon} style=${wt({color:t.color})}></ha-icon
+              ><span>${t.label}</span>
             </div>
             <div class="tile-value">${Yt(t.parts)}</div>
             <div class="tile-note">${t.note}</div>

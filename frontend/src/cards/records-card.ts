@@ -189,7 +189,8 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
         (tile) =>
           html`<div class="tile">
             <div class="tile-head">
-              <ha-icon .icon=${tile.icon}></ha-icon><span>${tile.label}</span>
+              <ha-icon .icon=${tile.icon} style=${styleMap({ color: tile.color })}></ha-icon
+              ><span>${tile.label}</span>
             </div>
             <div class="tile-value">${valueParts(tile.parts)}</div>
             <div class="tile-note">${tile.note}</div>

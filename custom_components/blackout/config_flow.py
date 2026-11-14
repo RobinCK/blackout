@@ -33,6 +33,7 @@ from .const import (
     CONF_GRID_THRESHOLD,
     CONF_GROUP,
     CONF_HISTORY_DAYS,
+    CONF_LANGUAGE,
     CONF_MIN_OUTAGE,
     CONF_NAME,
     CONF_OUTAGE_LOG_DAYS,
@@ -42,6 +43,8 @@ from .const import (
     DEFAULT_OPTIONS,
     DOMAIN,
     EMERGENCY_SOURCES,
+    LANGUAGE_AUTO,
+    LANGUAGES,
     SUBENTRY_QUEUE,
     TITLE,
 )
@@ -210,6 +213,13 @@ class BlackoutOptionsFlow(OptionsFlow):
         options = {**DEFAULT_OPTIONS, **self.config_entry.options}
         schema = vol.Schema(
             {
+                vol.Required(CONF_LANGUAGE, default=options[CONF_LANGUAGE]): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[*LANGUAGES, LANGUAGE_AUTO],
+                        translation_key=CONF_LANGUAGE,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
                 vol.Required(CONF_SCAN_INTERVAL, default=options[CONF_SCAN_INTERVAL]): NumberSelector(
                     NumberSelectorConfig(min=3, max=60, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="min")
                 ),
