@@ -1,0 +1,25 @@
+{
+  "domain": "blackout",
+  "name": "Blackout",
+  "after_dependencies": [
+    "frontend",
+    "recorder"
+  ],
+  "codeowners": [
+    "@RobinCK"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/RobinCK/blackout",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/RobinCK/blackout/issues",
+  "loggers": [
+    "custom_components.blackout"
+  ],
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,17 @@
+[project]
+name = "blackout"
+version = "0.1.0"
+description = "Home Assistant integration for planned and emergency power outages in Ukraine"
+requires-python = ">=3.13"
+license = "MIT"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PL", "ANN"]
+ignore = ["PLR0913", "PLR2004", "ANN401", "PLR0911", "RUF001", "RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["PLR2004", "ANN"]

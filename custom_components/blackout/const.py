@@ -1,0 +1,44 @@
+"""Constants of the Blackout integration."""
+
+from __future__ import annotations
+
+from typing import Final
+
+DOMAIN: Final = "blackout"
+TITLE: Final = "Blackout"
+SUBENTRY_QUEUE: Final = "queue"
+
+CONF_REGION: Final = "region"
+CONF_GROUP: Final = "group"
+CONF_NAME: Final = "name"
+CONF_GRID_ENTITY: Final = "grid_entity"
+CONF_GRID_THRESHOLD: Final = "grid_threshold"
+CONF_SCAN_INTERVAL: Final = "scan_interval"
+CONF_HISTORY_DAYS: Final = "history_days"
+CONF_OUTAGE_LOG_DAYS: Final = "outage_log_days"
+CONF_MIN_OUTAGE: Final = "min_outage_seconds"
+CONF_EMERGENCY_SOURCES: Final = "emergency_sources"
+
+EMERGENCY_UKRENERGO: Final = "ukrenergo"
+EMERGENCY_YASNO: Final = "yasno"
+EMERGENCY_SVITLO: Final = "svitlo_live"
+EMERGENCY_SOURCES: Final = (EMERGENCY_UKRENERGO, EMERGENCY_YASNO, EMERGENCY_SVITLO)
+
+DEFAULT_SCAN_INTERVAL: Final = 5
+DEFAULT_HISTORY_DAYS: Final = 90
+DEFAULT_OUTAGE_LOG_DAYS: Final = 365
+DEFAULT_MIN_OUTAGE: Final = 60
+DEFAULT_GRID_THRESHOLD: Final = 150.0
+DEFAULT_EMERGENCY_SOURCES: Final = [EMERGENCY_UKRENERGO, EMERGENCY_YASNO]
+
+DEFAULT_OPTIONS: Final = {
+    CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
+    CONF_HISTORY_DAYS: DEFAULT_HISTORY_DAYS,
+    CONF_OUTAGE_LOG_DAYS: DEFAULT_OUTAGE_LOG_DAYS,
+    CONF_MIN_OUTAGE: DEFAULT_MIN_OUTAGE,
+    CONF_EMERGENCY_SOURCES: DEFAULT_EMERGENCY_SOURCES,
+}
+
+BACKFILL_MAX_DAYS: Final = 30
+MAX_VERSIONS_PER_DAY: Final = 24
+WS_MAX_DAYS: Final = 90

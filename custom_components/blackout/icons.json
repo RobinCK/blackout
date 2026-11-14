@@ -1,0 +1,39 @@
+{
+  "entity": {
+    "sensor": {
+      "status": {
+        "default": "mdi:transmission-tower",
+        "state": {
+          "power_on": "mdi:transmission-tower",
+          "scheduled_outage": "mdi:transmission-tower-off",
+          "possible_outage": "mdi:transmission-tower-export",
+          "emergency": "mdi:alert",
+          "unscheduled_outage": "mdi:flash-off",
+          "unknown": "mdi:help-circle-outline"
+        }
+      },
+      "next_outage": { "default": "mdi:clock-alert-outline" },
+      "next_power_on": { "default": "mdi:clock-check-outline" },
+      "outage_today": { "default": "mdi:timer-off-outline" },
+      "outage_tomorrow": { "default": "mdi:calendar-clock" },
+      "longest_outage_today": { "default": "mdi:timer-sand" },
+      "region_status": { "default": "mdi:map-marker-radius" },
+      "schedule_updated": { "default": "mdi:update" },
+      "outage_since": { "default": "mdi:flash-off" },
+      "actual_outage_today": { "default": "mdi:flash-off-outline" },
+      "availability_7d": { "default": "mdi:percent-circle-outline" }
+    },
+    "binary_sensor": {
+      "scheduled_outage": { "default": "mdi:calendar-remove", "state": { "off": "mdi:calendar-check" } },
+      "possible_outage": { "default": "mdi:calendar-question" },
+      "emergency": { "default": "mdi:alert", "state": { "off": "mdi:shield-check-outline" } },
+      "grid": { "default": "mdi:transmission-tower", "state": { "off": "mdi:transmission-tower-off" } }
+    },
+    "calendar": {
+      "schedule": { "default": "mdi:calendar-clock" }
+    },
+    "event": {
+      "schedule_event": { "default": "mdi:calendar-sync" }
+    }
+  }
+}
