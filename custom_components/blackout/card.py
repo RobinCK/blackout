@@ -28,7 +28,7 @@ async def async_register_card(hass: HomeAssistant) -> None:
     if digest is None:
         return
 
-    await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(CARD_FILE), True)])
+    await hass.http.async_register_static_paths([StaticPathConfig(CARD_URL, str(CARD_FILE), False)])
 
     if "frontend" not in hass.config.components:
         return

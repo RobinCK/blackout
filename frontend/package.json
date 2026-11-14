@@ -1,6 +1,6 @@
 {
   "name": "lovelace-blackout-card",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "description": "Home Assistant Lovelace cards for planned and emergency power outages from the Blackout integration",
   "type": "module",
   "license": "MIT",
