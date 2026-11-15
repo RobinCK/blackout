@@ -80,6 +80,21 @@ export interface WeekCardConfig extends BaseCardConfig {
   readonly battery?: BatteryConfig;
 }
 
+export interface BatteryCardConfig extends BaseCardConfig {
+  readonly battery?: BatteryConfig;
+}
+
+export interface VoltagePhase {
+  readonly input?: string;
+  readonly output?: string;
+}
+
+export interface VoltageCardConfig extends BaseCardConfig {
+  readonly phases?: readonly VoltagePhase[];
+  readonly voltage_min?: number;
+  readonly voltage_max?: number;
+}
+
 export type OutageRecordType =
   'longest_outage' | 'longest_power_streak' | 'current_power_streak' | 'worst_day' | 'outage_count';
 

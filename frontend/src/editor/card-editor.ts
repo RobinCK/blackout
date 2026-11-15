@@ -3,7 +3,7 @@ import { property, state } from 'lit/decorators.js';
 
 import { BATTERY_DEFAULTS } from '../defaults';
 import { createTranslator, type Translator } from '../i18n';
-import type { BaseCardConfig, BatteryConfig } from '../types/config';
+import type { BaseCardConfig, BatteryConfig, VoltagePhase } from '../types/config';
 import type { HassEntity, HomeAssistant } from '../types/ha';
 import { loadHaComponents } from './load-ha-components';
 import {
@@ -26,9 +26,13 @@ interface PickerOptions {
   readonly onChange: (entity: string | undefined) => void;
 }
 
-type EditableConfig = BaseCardConfig & { readonly battery?: BatteryConfig };
+type EditableConfig = BaseCardConfig & {
+  readonly battery?: BatteryConfig;
+  readonly phases?: readonly VoltagePhase[];
+};
 
 const SENSOR_DOMAINS: readonly string[] = ['sensor'];
+const PHASES = ['L1', 'L2', 'L3'] as const;
 const POWER_UNITS = new Set(['w', 'kw']);
 
 function isPower(entity: HassEntity): boolean {
@@ -37,6 +41,12 @@ function isPower(entity: HassEntity): boolean {
   return (
     entity.attributes.device_class === 'power' ||
     (typeof unit === 'string' && POWER_UNITS.has(unit.toLowerCase()))
+  );
+}
+
+function isVoltage(entity: HassEntity): boolean {
+  return (
+    entity.attributes.device_class === 'voltage' || entity.attributes.unit_of_measurement === 'V'
   );
 }
 
@@ -137,6 +147,7 @@ export class BlackoutCardEditor extends LitElement {
         },
       })}
       ${this.renderForm(layout.main, data, onChange)}
+      ${layout.phases ? this.renderPhases(config.phases ?? []) : nothing}
       ${layout.battery ? this.renderBattery(layout.battery, config.battery ?? {}) : nothing}
       ${this.renderForm(layout.advanced, data, onChange)}
     </div>`;
@@ -169,6 +180,59 @@ export class BlackoutCardEditor extends LitElement {
         })}
       </div>
     </ha-expansion-panel>`;
+  }
+
+  private renderPhases(phases: readonly VoltagePhase[]): TemplateResult {
+    const count = phases.flatMap((phase) => [phase.input, phase.output]).filter(Boolean).length;
+
+    return html`<ha-expansion-panel
+      outlined
+      expanded
+      .header=${this.t('editor.phases')}
+      .secondary=${this.translator.plural('editor.sensors', count)}
+    >
+      <div class="panel-content">
+        <div class="hint">${this.t('editor.phases_hint')}</div>
+        ${PHASES.map(
+          (phase, index) =>
+            html`${this.renderPicker({
+              label: this.translator.t('editor.phase_input', { phase }),
+              value: phases[index]?.input,
+              required: index === 0,
+              filter: isVoltage,
+              onChange: (entity) => {
+                this.updatePhase(index, { input: entity });
+              },
+            })}
+            ${this.renderPicker({
+              label: this.translator.t('editor.phase_output', { phase }),
+              value: phases[index]?.output,
+              required: false,
+              filter: isVoltage,
+              onChange: (entity) => {
+                this.updatePhase(index, { output: entity });
+              },
+            })}`,
+        )}
+      </div>
+    </ha-expansion-panel>`;
+  }
+
+  private updatePhase(index: number, patch: VoltagePhase): void {
+    if (!this.config) {
+      return;
+    }
+
+    const current = this.config.phases ?? [];
+    const phases = PHASES.map((_, position) =>
+      compact({ ...current[position], ...(position === index ? patch : {}) }),
+    );
+
+    while (phases.length > 0 && isEmpty(phases.at(-1))) {
+      phases.pop();
+    }
+
+    this.commit({ ...this.config, phases: phases.length > 0 ? phases : undefined });
   }
 
   private renderPicker(options: PickerOptions): TemplateResult {

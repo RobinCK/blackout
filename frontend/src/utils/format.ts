@@ -149,3 +149,18 @@ export function createFormatter(translator: Translator, timeZone = DEFAULT_TIME_
         : { value: number(watts, 0), unit: t('unit.w') },
   };
 }
+
+export function startOfDayIn(time: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(time);
+  const part = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((item) => item.type === type)?.value ?? 0);
+  const elapsed = ((part('hour') * 60 + part('minute')) * 60 + part('second')) * 1000;
+
+  return time - elapsed - (time % 1000);
+}

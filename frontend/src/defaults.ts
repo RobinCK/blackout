@@ -1,4 +1,11 @@
-import { RECORDS_CARD_TYPE, SCHEDULE_CARD_TYPE, STATUS_CARD_TYPE, WEEK_CARD_TYPE } from './const';
+import {
+  BATTERY_CARD_TYPE,
+  RECORDS_CARD_TYPE,
+  SCHEDULE_CARD_TYPE,
+  STATUS_CARD_TYPE,
+  VOLTAGE_CARD_TYPE,
+  WEEK_CARD_TYPE,
+} from './const';
 import type { BatteryConfig, DayKey } from './types/config';
 
 export type ConfigValues = Readonly<Record<string, unknown>>;
@@ -10,6 +17,8 @@ export const DEFAULT_SCHEDULE_DAYS: readonly DayKey[] = ['today', 'tomorrow'];
 export const DEFAULT_RECORD_COLUMNS = 2;
 export const DEFAULT_RESERVE = 10;
 export const DEFAULT_MORNING_HOUR = 7;
+export const DEFAULT_VOLTAGE_MIN = 207;
+export const DEFAULT_VOLTAGE_MAX = 253;
 
 const COMMON: ConfigValues = { show_header: true, tap_action: 'more-info' };
 
@@ -41,6 +50,12 @@ export const CARD_DEFAULTS: Readonly<Record<string, ConfigValues>> = {
     show_next: true,
   },
   [RECORDS_CARD_TYPE]: { ...COMMON, columns: DEFAULT_RECORD_COLUMNS },
+  [BATTERY_CARD_TYPE]: COMMON,
+  [VOLTAGE_CARD_TYPE]: {
+    ...COMMON,
+    voltage_min: DEFAULT_VOLTAGE_MIN,
+    voltage_max: DEFAULT_VOLTAGE_MAX,
+  },
 };
 
 export const BATTERY_DEFAULTS: Readonly<BatteryConfig> = {

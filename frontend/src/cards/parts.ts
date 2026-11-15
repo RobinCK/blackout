@@ -12,6 +12,7 @@ export interface StatView {
   readonly label: string;
   readonly parts: readonly DurationPart[];
   readonly tone?: Tone;
+  readonly note?: string;
 }
 
 export const STATUS_TONES: Readonly<Record<PowerStatus, Tone>> = {
@@ -59,7 +60,7 @@ export function renderStats(stats: readonly StatView[]): TemplateResult | typeof
           <span class="stat-label">${stat.label}</span>
           <span class="stat-value ${stat.tone ? `tone-${stat.tone}` : ''}"
             >${valueParts(stat.parts)}</span
-          >
+          >${stat.note ? html`<span class="stat-note">${stat.note}</span>` : nothing}
         </div>`,
     )}
   </div>`;

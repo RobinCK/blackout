@@ -211,6 +211,15 @@ export const cardStyles = css`
     white-space: nowrap;
   }
 
+  .stat-note {
+    overflow: hidden;
+    color: var(--bo-muted);
+    font-family: var(--bo-mono);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .stat-value .unit,
   .unit {
     margin-left: 3px;

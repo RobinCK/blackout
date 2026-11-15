@@ -1,13 +1,17 @@
+import { BlackoutBatteryCard } from './cards/battery-card';
 import { BlackoutRecordsCard } from './cards/records-card';
 import { BlackoutScheduleCard } from './cards/schedule-card';
 import { BlackoutStatusCard } from './cards/status-card';
+import { BlackoutVoltageCard } from './cards/voltage-card';
 import { BlackoutWeekCard } from './cards/week-card';
 import {
+  BATTERY_CARD_TYPE,
   DOCUMENTATION_URL,
   EDITOR_TYPE,
   RECORDS_CARD_TYPE,
   SCHEDULE_CARD_TYPE,
   STATUS_CARD_TYPE,
+  VOLTAGE_CARD_TYPE,
   WEEK_CARD_TYPE,
 } from './const';
 import { BlackoutCardEditor } from './editor/card-editor';
@@ -18,6 +22,8 @@ const ELEMENTS: readonly (readonly [string, CustomElementConstructor])[] = [
   [SCHEDULE_CARD_TYPE, BlackoutScheduleCard],
   [WEEK_CARD_TYPE, BlackoutWeekCard],
   [RECORDS_CARD_TYPE, BlackoutRecordsCard],
+  [BATTERY_CARD_TYPE, BlackoutBatteryCard],
+  [VOLTAGE_CARD_TYPE, BlackoutVoltageCard],
   [EDITOR_TYPE, BlackoutCardEditor],
 ];
 
@@ -43,6 +49,18 @@ const CARDS: readonly CustomCardEntry[] = [
     type: RECORDS_CARD_TYPE,
     name: 'Blackout records',
     description: 'Outage records and any records from long-term statistics.',
+  },
+  {
+    type: BATTERY_CARD_TYPE,
+    name: 'Blackout battery',
+    description:
+      'Battery charge today with a forecast to midnight, outages, charged energy and cycles.',
+  },
+  {
+    type: VOLTAGE_CARD_TYPE,
+    name: 'Blackout voltage',
+    description:
+      'Input voltage per phase over 24 hours by half hours, after stabilizers and outages.',
   },
 ];
 

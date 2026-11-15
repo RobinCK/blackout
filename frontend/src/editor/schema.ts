@@ -1,4 +1,11 @@
-import { RECORDS_CARD_TYPE, SCHEDULE_CARD_TYPE, STATUS_CARD_TYPE, WEEK_CARD_TYPE } from '../const';
+import {
+  BATTERY_CARD_TYPE,
+  RECORDS_CARD_TYPE,
+  SCHEDULE_CARD_TYPE,
+  STATUS_CARD_TYPE,
+  VOLTAGE_CARD_TYPE,
+  WEEK_CARD_TYPE,
+} from '../const';
 import { CARD_DEFAULTS, type ConfigValues } from '../defaults';
 import { LANGUAGES } from '../i18n';
 
@@ -38,6 +45,7 @@ export interface EditorLayout {
   readonly defaults: ConfigValues;
   readonly main: readonly HaFormSchema[];
   readonly battery: BatteryLayout | null;
+  readonly phases?: boolean;
   readonly advanced: readonly HaFormSchema[];
 }
 
@@ -206,6 +214,26 @@ function recordsLayout(config: EditorConfig): Omit<EditorLayout, 'defaults' | 'a
   };
 }
 
+function batteryLayout(
+  config: EditorConfig,
+  t: Translate,
+): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  return {
+    entityRequired: false,
+    main: header(config),
+    battery: battery(config, t, ['soc', 'power', 'load'], t('editor.battery_hint.battery')),
+  };
+}
+
+function voltageLayout(config: EditorConfig): Omit<EditorLayout, 'defaults' | 'advanced'> {
+  return {
+    entityRequired: false,
+    main: [...header(config), number('voltage_min', 100, 250), number('voltage_max', 200, 300)],
+    battery: null,
+    phases: true,
+  };
+}
+
 function cardLayout(
   cardType: string,
   config: EditorConfig,
@@ -220,6 +248,10 @@ function cardLayout(
       return weekLayout(config, t);
     case RECORDS_CARD_TYPE:
       return recordsLayout(config);
+    case BATTERY_CARD_TYPE:
+      return batteryLayout(config, t);
+    case VOLTAGE_CARD_TYPE:
+      return voltageLayout(config);
     default:
       return { entityRequired: true, main: header(config), battery: null };
   }

@@ -10,7 +10,7 @@ schedules for 21 regions, the grid state of every region from Ukrenergo and, opt
 grid presence from your inverter. It keeps the history of schedules and real outages, so dashboard
 cards can show the last days, records and availability.
 
-Dashboard cards come with the integration: install one thing and four cards appear in the card
+Dashboard cards come with the integration: install one thing and six cards appear in the card
 picker.
 
 | Power status | Scheduled outage | Emergency outages |
@@ -20,6 +20,10 @@ picker.
 | Schedule | Last 7 days | Records |
 | --- | --- | --- |
 | ![Schedule](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/schedule.png) | ![Week](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/week.png) | ![Records](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/records.png) |
+
+| Battery today | Voltage quality |
+| --- | --- |
+| ![Battery today](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/battery.png) | ![Voltage quality](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/voltage.png) |
 
 | Light theme, English | |
 | --- | --- |
@@ -142,7 +146,8 @@ Slot codes in attributes and events: `1` power on, `0` outage, `?` possible outa
 
 ## Cards
 
-Every card takes `entity`: any entity of a Blackout queue, usually `sensor.<queue>_power_status`.
+Every card takes `entity`: any entity of a Blackout queue, usually `sensor.<queue>_power_status`
+(optional for the battery and voltage cards).
 Texts are in English and Ukrainian and follow the language of your Home Assistant profile; set
 `language` on a card to fix it.
 
@@ -190,6 +195,7 @@ if it is off now) and the current load during the outage. `soc` and `capacity` a
 | Status | forecast on the timeline, battery statistics | all options |
 | Schedule | level at the start of each upcoming outage window | `soc`, `power`, `capacity`, `reserve`, `power_positive` |
 | Week | level and runtime for the next outage | all options except `morning_hour` |
+| Battery | the day with a forecast to midnight, charged and discharged energy, cycles | all options except `morning_hour`; `soc` alone draws the day |
 
 The visual editor shows only the options that change the card: for example, the battery section of
 the schedule card disappears when `show_windows` is off, and the title when the header is hidden.
@@ -317,6 +323,53 @@ Item types:
 - `streak`: the longest run of days whose `value` is `below` and/or `above` a limit.
 
 Every item takes `label`, `icon` and `color`.
+
+### Battery card
+
+The state of charge since midnight, a forecast to midnight with the outages of the schedule, the
+lowest charge of the day, charged and discharged energy and cycles.
+
+```yaml
+type: custom:blackout-battery-card
+entity: sensor.home_power_status
+battery:
+  soc: sensor.deye_master_battery_soc
+  power: sensor.deye_master_battery_power
+  load: sensor.deye_master_load_power
+  capacity: 16
+  reserve: 10
+```
+
+`battery` takes the options of the [Battery](#battery) section. `soc` is required; `capacity` adds
+the energy, cycles and the forecast. Energy and cycles come from the changes of the state of charge.
+`entity` is optional: with a queue the chart shows today's outages and the forecast runs the load
+from the battery during them.
+
+### Voltage card
+
+Input voltage of every phase over the last 24 hours by half hours: the range of each half hour,
+half hours outside the limits, the voltage after the stabilizers and the outages.
+
+```yaml
+type: custom:blackout-voltage-card
+entity: sensor.home_power_status
+phases:
+  - input: sensor.house_voltage_l1
+    output: sensor.stabilized_voltage_l1
+  - input: sensor.house_voltage_l2
+    output: sensor.stabilized_voltage_l2
+  - input: sensor.house_voltage_l3
+    output: sensor.stabilized_voltage_l3
+```
+
+| Option | Default | |
+| --- | --- | --- |
+| `phases` | — | up to three phases: `input` voltage and optional `output` after the stabilizers |
+| `voltage_min` | `207` | lowest normal voltage, V |
+| `voltage_max` | `253` | highest normal voltage, V |
+
+The sensors need long-term statistics (`state_class: measurement`): the card reads their 5-minute
+minimum, maximum and mean. `entity` is optional and adds the outages of the queue.
 
 ## Websocket API
 
