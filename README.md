@@ -252,12 +252,15 @@ days: 7
 | `days` | `7` | 1–90 |
 | `show_badge` | `true` | grid state badge |
 | `show_stats` | `true` | without grid, outages, longest, availability |
-| `show_schedule` | `true` | scheduled outages still ahead |
+| `show_schedule` | `true` | scheduled outages: ahead, and past ones when power stayed on |
 | `show_legend` | `true` | |
 | `show_next` | `true` | next outage and battery forecast |
 | `battery` | — | |
 
-Without a grid entity the card shows the schedule of each day instead of actual outages.
+With a grid entity, solid bars are actual outages, hatching on a dark track is the schedule still ahead and
+hatching on green marks scheduled time when the power stayed on. The status card timeline marks the
+past part of a scheduled outage the same way. Without a grid entity the card shows the schedule of
+each day instead of actual outages.
 
 ### Records card
 

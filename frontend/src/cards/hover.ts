@@ -103,5 +103,14 @@ export function describeSlot(ctx: RenderContext, slot: number, options: SlotOpti
   const prefix = lines.length > 0 || (grid && Boolean(ctx.payload.queue.grid_entity));
   const schedule = scheduleLine(ctx, slot, prefix, lines.length > 0);
 
-  return { title: options.title, lines: schedule ? [...lines, schedule] : lines };
+  if (!schedule) {
+    return { title: options.title, lines };
+  }
+
+  const skipped = schedule.swatch === 'off' && lines.some((line) => line.swatch === 'on');
+
+  return {
+    title: options.title,
+    lines: [...lines, skipped ? { ...schedule, swatch: 'skipped' } : schedule],
+  };
 }

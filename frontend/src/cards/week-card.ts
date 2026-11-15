@@ -156,55 +156,76 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
     const todayKey = ctx.f.dayKey(new Date(ctx.now));
     const days = ctx.payload.days.filter((day) => day.date <= todayKey).slice(-this.historyDays());
     const hasGrid = ctx.payload.grid !== null;
+    const rows = days.map((day) => ({ day, segments: this.rowSegments(ctx, day, hasGrid) }));
+    const skipped = rows.some((row) =>
+      row.segments.some((item) => item.className === 'fill-skipped'),
+    );
 
     return html`${config?.show_stats === false || !hasGrid ? nothing : html`<div class="summary">${renderStats(this.summary(ctx))}</div>`}
       <div class="rows">
-        ${days.map((day) => this.renderRow(ctx, day, day.date === todayKey, hasGrid))}
+        ${rows.map((row) => this.renderRow(ctx, row.day, row.segments, row.day.date === todayKey, hasGrid))}
       </div>
       <div class="axis-line mono">
         ${AXIS.map((hour) => html`<span style="left:${(hour / 24) * 100}%">${String(hour).padStart(2, '0')}</span>`)}
       </div>
-      ${config?.show_legend === false ? nothing : this.renderLegend(ctx, hasGrid)}
+      ${config?.show_legend === false ? nothing : this.renderLegend(ctx, hasGrid, skipped)}
       ${config?.show_next === false ? nothing : this.renderNext(ctx)}`;
+  }
+
+  private rowSegments(ctx: RenderContext, day: QueueDay, hasGrid: boolean): BarSegment[] {
+    const { now } = ctx;
+    const from = Date.parse(day.start);
+    const to = from + 24 * HOUR_MS;
+    const showSchedule = this.config?.show_schedule !== false;
+    const windows = showSchedule && day.status !== 'waiting' ? outageWindows(day) : [];
+
+    if (!hasGrid) {
+      return windows.map((window) => ({
+        from: window.start,
+        to: window.end,
+        className: window.possible ? 'fill-possible' : 'fill-actual',
+      }));
+    }
+
+    const skipped = windows
+      .filter((window) => !window.possible && window.start < now)
+      .map((window) => ({
+        from: window.start,
+        to: Math.min(window.end, now),
+        className: 'fill-skipped',
+      }));
+    const actual = day.actual.map((outage) => ({
+      from: Date.parse(outage.start),
+      to: outage.end ? Date.parse(outage.end) : now,
+      className: 'fill-actual',
+    }));
+    const planned = windows
+      .filter((window) => window.end > now)
+      .map((window) => ({
+        from: Math.max(window.start, now),
+        to: window.end,
+        className: 'fill-hatch',
+      }));
+
+    return [
+      { from, to: Math.min(to, now), className: 'fill-on' },
+      ...skipped,
+      ...actual,
+      ...planned,
+    ];
   }
 
   private renderRow(
     ctx: RenderContext,
     day: QueueDay,
+    segments: readonly BarSegment[],
     isToday: boolean,
     hasGrid: boolean,
   ): TemplateResult {
     const { now, f } = ctx;
     const from = Date.parse(day.start);
     const to = from + 24 * HOUR_MS;
-    const segments: BarSegment[] = [];
     const showSchedule = this.config?.show_schedule !== false;
-
-    if (hasGrid) {
-      segments.push({ from, to: Math.min(to, now), className: 'fill-on' });
-      segments.push(
-        ...day.actual.map((outage) => ({
-          from: Date.parse(outage.start),
-          to: outage.end ? Date.parse(outage.end) : now,
-          className: 'fill-actual',
-        })),
-      );
-    }
-
-    if (showSchedule && day.status !== 'waiting') {
-      for (const window of outageWindows(day)) {
-        const start = hasGrid ? Math.max(window.start, now) : window.start;
-
-        if (window.end > start) {
-          segments.push({
-            from: start,
-            to: window.end,
-            className: hasGrid ? 'fill-hatch' : window.possible ? 'fill-possible' : 'fill-actual',
-          });
-        }
-      }
-    }
-
     const marker = isToday
       ? html`<span class="now" style="left:${toPercent(now, from, to)}%"></span>`
       : undefined;
@@ -226,7 +247,7 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
     </div>`;
   }
 
-  private renderLegend(ctx: RenderContext, hasGrid: boolean): TemplateResult {
+  private renderLegend(ctx: RenderContext, hasGrid: boolean, skipped: boolean): TemplateResult {
     const { t } = ctx;
 
     return html`<div class="legend">
@@ -236,6 +257,13 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
         hasGrid && this.config?.show_schedule !== false
           ? html`<span class="legend-item"
               ><span class="swatch hatch"></span>${t('legend.by_schedule')}</span
+            >`
+          : nothing
+      }
+      ${
+        skipped
+          ? html`<span class="legend-item"
+              ><span class="swatch skipped"></span>${t('legend.skipped')}</span
             >`
           : nothing
       }

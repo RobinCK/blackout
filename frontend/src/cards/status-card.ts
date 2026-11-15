@@ -339,12 +339,28 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
     const offset = this.config?.timeline_offset ?? DEFAULT_TIMELINE_OFFSET;
     const from = Math.floor((now - offset * HOUR_MS) / HOUR_MS) * HOUR_MS;
     const to = from + hours * HOUR_MS;
-    const segments: BarSegment[] = clipSegments(slotSegments(payload.days), from, to).map(
-      (segment) => ({
-        from: segment.start,
-        to: segment.end,
-        className: slotClass(segment, now),
-      }),
+    const hasGrid = payload.grid !== null;
+    const segments: BarSegment[] = clipSegments(slotSegments(payload.days), from, to).flatMap(
+      (segment): BarSegment[] => {
+        if (!hasGrid || segment.state !== 'off' || segment.start >= now) {
+          return [{ from: segment.start, to: segment.end, className: slotClass(segment, now) }];
+        }
+
+        const skipped = {
+          from: segment.start,
+          to: Math.min(segment.end, now),
+          className: 'fill-skipped',
+        };
+
+        if (segment.end <= now) {
+          return [skipped];
+        }
+
+        return [
+          skipped,
+          { from: now, to: segment.end, className: slotClass({ ...segment, start: now }, now) },
+        ];
+      },
     );
 
     segments.push(

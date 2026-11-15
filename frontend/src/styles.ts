@@ -32,6 +32,11 @@ export const tokens = css`
       color-mix(in srgb, var(--bo-off) 75%, transparent) 0 3px,
       transparent 3px 6px
     );
+    --bo-hatch-skipped: repeating-linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--bo-off) 65%, transparent) 0 2px,
+      transparent 2px 6px
+    );
     --bo-hatch-muted: repeating-linear-gradient(
       -45deg,
       var(--bo-unknown) 0 3px,
@@ -258,6 +263,11 @@ export const cardStyles = css`
   .swatch.hatch,
   .fill-hatch {
     background: var(--bo-hatch);
+  }
+
+  .swatch.skipped,
+  .fill-skipped {
+    background: var(--bo-hatch-skipped), var(--bo-track-strong);
   }
 
   .swatch.hatch-muted,

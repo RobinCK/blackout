@@ -86,6 +86,7 @@ export const en = {
   'legend.unknown': 'no schedule',
   'legend.grid_on': 'grid on',
   'legend.by_schedule': 'by schedule',
+  'legend.skipped': 'scheduled, no outage',
   'legend.emergency': 'emergency',
 
   'hover.schedule': 'Schedule',

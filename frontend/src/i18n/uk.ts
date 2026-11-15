@@ -88,6 +88,7 @@ export const uk: Dictionary = {
   'legend.unknown': 'графіка ще немає',
   'legend.grid_on': 'мережа є',
   'legend.by_schedule': 'за графіком',
+  'legend.skipped': 'за графіком, не вимикали',
   'legend.emergency': 'аварійні',
 
   'hover.schedule': 'Графік',

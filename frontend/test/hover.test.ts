@@ -71,6 +71,16 @@ describe('hover', () => {
     expect(future.lines.map((line) => line.text)).toEqual(['Schedule: power on · 16:30–24:00']);
   });
 
+  it('marks a scheduled outage when the power stayed on', () => {
+    const ctx = context([day(SLOTS)], 'binary_sensor.grid');
+    const content = describeSlot(ctx, Date.parse('2026-11-14T14:30:00+02:00'), { title: '' });
+
+    expect(content.lines).toEqual([
+      { swatch: 'on', text: 'Grid: power on' },
+      { swatch: 'skipped', text: 'Schedule: outage · 14:00–16:30' },
+    ]);
+  });
+
   it('skips an unknown schedule next to the grid state', () => {
     const ctx = context([{ ...day(SLOTS), status: 'waiting', slots: [] }], 'binary_sensor.grid');
     const content = describeSlot(ctx, Date.parse('2026-11-14T10:00:00+02:00'), { title: '' });
