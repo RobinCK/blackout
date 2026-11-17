@@ -10,7 +10,20 @@ import type { BaseCardConfig, ColorKey } from '../types/config';
 import type { HomeAssistant, LovelaceGridOptions } from '../types/ha';
 import type { QueuePayload } from '../types/payload';
 import { createFormatter, DEFAULT_TIME_ZONE, type Formatter } from '../utils/format';
+import { SIZE_RANGES } from '../defaults';
 import { slotAt, type BarHover, type HoverContent } from './hover';
+import {
+  clampSize,
+  gridRows,
+  isSizeSetting,
+  rowsCardSize,
+  rowsHeight,
+  SIZE_ROWS,
+  sizeRows,
+  tierOf,
+  type CardSize,
+  type SizeSetting,
+} from './size';
 
 const COLOR_VARIABLES: Readonly<Record<ColorKey, string>> = {
   on: '--blackout-on-color',
@@ -26,6 +39,7 @@ export interface RenderContext {
   readonly now: number;
   readonly t: Translator['t'];
   readonly f: Formatter;
+  readonly size: SizeSetting;
 }
 
 interface HoverBand {
@@ -43,6 +57,26 @@ interface HoverView {
 
 const TOUCH_HOVER_MS = 2500;
 
+const overflows = (card: HTMLElement): boolean => card.scrollHeight > card.clientHeight + 1;
+
+const setCut = (group: readonly HTMLElement[], cut: boolean): void => {
+  group.forEach((element) => {
+    element.toggleAttribute('data-cut', cut);
+  });
+};
+
+const dropGroups = (card: HTMLElement): HTMLElement[][] => {
+  const groups = new Map<number, HTMLElement[]>();
+
+  card.querySelectorAll<HTMLElement>('[data-drop]').forEach((element) => {
+    const priority = Number(element.dataset.drop) || 0;
+
+    groups.set(priority, [...(groups.get(priority) ?? []), element]);
+  });
+
+  return [...groups.entries()].sort((a, b) => a[0] - b[0]).map(([, elements]) => elements);
+};
+
 export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElement {
   static override styles = [tokens, cardStyles];
 
@@ -52,11 +86,14 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
 
   @state() private accessor hover: HoverView | null = null;
 
+  @property({ attribute: false }) accessor layout: string | undefined;
+
   protected readonly queue = new QueueController(this);
   protected translator: Translator = createTranslator('en');
   protected formatter: Formatter = createFormatter(this.translator);
   private localeKey = '';
   private hoverTimer: number | undefined;
+  private resizeObserver: ResizeObserver | undefined;
 
   protected abstract readonly cardSize: number;
 
@@ -78,6 +115,10 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
     return true;
   }
 
+  protected defaultSize(): SizeSetting {
+    return 'medium';
+  }
+
   setConfig(config: C): void {
     if (!config || typeof config !== 'object') {
       throw new Error('Invalid configuration');
@@ -87,11 +128,114 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
   }
 
   getCardSize(): number {
-    return this.cardSize;
+    const rows = this.heightRows();
+
+    return rows === undefined ? this.cardSize : rowsCardSize(rows);
   }
 
   getGridOptions(): LovelaceGridOptions {
-    return { columns: 12, rows: 'auto', min_columns: 6 };
+    const [min, max] = this.sizeRange();
+
+    return {
+      columns: 12,
+      rows: this.heightRows() ?? 'auto',
+      min_columns: 6,
+      min_rows: SIZE_ROWS[min],
+      max_rows: SIZE_ROWS[max],
+    };
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.resizeObserver ??= new ResizeObserver(() => {
+      this.fitHeight();
+    });
+    this.resizeObserver.observe(this);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    this.resizeObserver?.disconnect();
+  }
+
+  protected override updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
+
+    const rows = this.layout === 'grid' ? undefined : this.heightRows();
+
+    if (rows === undefined) {
+      this.style.removeProperty('height');
+    } else {
+      this.style.height = `${rowsHeight(rows)}px`;
+    }
+
+    this.fitHeight();
+  }
+
+  protected size(): SizeSetting {
+    return tierOf(this.heightRows());
+  }
+
+  protected cardClass(): string {
+    return this.heightRows() === undefined ? '' : 'fixed';
+  }
+
+  private sizeRange(): readonly [CardSize, CardSize] {
+    const type = (this.config?.type ?? '').replace(/^custom:/, '');
+
+    return SIZE_RANGES[type] ?? ['small', 'large'];
+  }
+
+  private chosenSize(): SizeSetting {
+    const config = this.config;
+    const [min, max] = this.sizeRange();
+    const chosen = config && isSizeSetting(config.size) ? config.size : this.defaultSize();
+
+    return clampSize(chosen, min, max);
+  }
+
+  private heightRows(): number | undefined {
+    const config = this.config;
+
+    return (config ? gridRows(config) : undefined) ?? sizeRows(this.chosenSize());
+  }
+
+  private fitHeight(): void {
+    const card = this.renderRoot.querySelector<HTMLElement>('ha-card');
+
+    if (!card) {
+      return;
+    }
+
+    card.querySelectorAll('[data-cut]').forEach((element) => {
+      element.removeAttribute('data-cut');
+    });
+
+    if (this.heightRows() === undefined || card.clientHeight === 0) {
+      return;
+    }
+
+    const cut: HTMLElement[][] = [];
+
+    for (const group of dropGroups(card)) {
+      if (!overflows(card)) {
+        break;
+      }
+
+      setCut(group, true);
+      cut.push(group);
+    }
+
+    cut
+      .slice(0, -1)
+      .reverse()
+      .forEach((group) => {
+        setCut(group, false);
+
+        if (overflows(card)) {
+          setCut(group, true);
+        }
+      });
   }
 
   protected override shouldUpdate(changed: PropertyValues<this>): boolean {
@@ -145,7 +289,7 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
     const message = this.renderState();
 
     if (message) {
-      return html`<ha-card style=${style}>${message}</ha-card>`;
+      return html`<ha-card class=${this.cardClass()} style=${style}>${message}</ha-card>`;
     }
 
     const payload = this.queue.payload;
@@ -159,9 +303,10 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
       now: this.queue.now,
       t: (key, params) => this.translator.t(key, params),
       f: this.formatter,
+      size: this.size(),
     };
 
-    return html`<ha-card style=${style}
+    return html`<ha-card class=${this.cardClass()} style=${style}
       >${this.renderHeader(ctx)}${this.renderContent(ctx)}${this.renderHover()}</ha-card
     >`;
   }
@@ -267,7 +412,7 @@ export abstract class BlackoutBaseCard<C extends BaseCardConfig> extends LitElem
   }
 
   protected renderWithoutQueue(style: ReturnType<typeof styleMap>): TemplateResult {
-    return html`<ha-card style=${style}
+    return html`<ha-card class=${this.cardClass()} style=${style}
       ><div class="message">${this.t('error.loading')}</div></ha-card
     >`;
   }

@@ -46,6 +46,9 @@ picker.
 - A websocket API that gives cards everything about a queue in one call.
 - Four dashboard cards (status, schedule, last days, records) with a visual editor, light and dark
   themes, English and Ukrainian texts and your own text and color overrides.
+- Tile sizes: every card has a small, medium and large layout on the Home Assistant grid (3, 6 and
+  9 rows), so the cards sit next to each other with aligned edges and nothing jumps while the data
+  loads.
 - English and Ukrainian translations.
 
 ## Regions and sources
@@ -161,6 +164,7 @@ window it belongs to and, with a grid entity, whether there was power at that ti
 | `entity` | — | entity of a Blackout queue |
 | `title` | per card | header text; the header is hidden with `show_header: false` |
 | `show_header` | `true` | |
+| `size` | per card | card height: `small`, `medium`, `large` or `auto` (the height of the content), see [Sizes](#sizes) |
 | `language` | profile language | `en` or `uk` |
 | `time_zone` | `Europe/Kyiv` | time zone of the times shown |
 | `labels` | — | your own texts by key, for example `hero.outage_in: Off in` (keys are in `frontend/src/i18n/en.ts`) |
@@ -170,6 +174,29 @@ window it belongs to and, with a grid entity, whether there was power at that ti
 Colors can also be set in a theme with the `--blackout-on-color`, `--blackout-off-color`,
 `--blackout-possible-color`, `--blackout-emergency-color`, `--blackout-battery-color`,
 `--blackout-unknown-color` and `--blackout-mono-font` variables.
+
+### Sizes
+
+The sizes follow the rows of the Home Assistant sections grid: `small` is 3 rows (184 px),
+`medium` 6 rows (376 px) and `large` 9 rows (568 px). Two small cards stack next to one medium,
+a small and a medium next to one large, with the edges aligned. Every card has its own layout for
+each size; what does not fit in the height is left out in a fixed order (first the legend, then
+the details), and the height stays the same while the data loads.
+
+![Cards of different sizes on one board](https://raw.githubusercontent.com/RobinCK/blackout/main/docs/images/sizes.png)
+
+In a sections view the Layout tab of the card editor can change the rows as well; the card picks
+the layout that fits the rows. In a masonry view, stacks and other containers the card takes the
+same fixed height. `auto` restores the height of the content.
+
+| Card | Sizes | Default | Small | Medium | Large |
+| --- | --- | --- | --- | --- | --- |
+| Status | small, medium | medium | countdown, grid and battery rows | with the axis and statistics | — |
+| Schedule | small, medium | medium; small with `show_windows` and `show_totals` off | days and axis | with the windows and totals | — |
+| Last days | small to large | medium | thin rows of the days | with a row of statistics and the next outage | everything, taller rows |
+| Records | small to large | by the number of rows of tiles | a list | tiles | tiles |
+| Battery | small, medium | medium | the chart | with the legend and statistics | — |
+| Voltage | small to large | medium | thin phase tracks | with the legend and statistics | tall tracks |
 
 ### Battery
 

@@ -1,4 +1,4 @@
-import { css, html, nothing, type TemplateResult } from 'lit';
+import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -21,6 +21,7 @@ import type { HomeAssistant } from '../types/ha';
 import type { ActualOutage } from '../types/payload';
 import type { DurationPart, Formatter } from '../utils/format';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import type { SizeSetting } from './size';
 import { text, valueParts } from './parts';
 import { findQueueEntity } from './stub';
 
@@ -120,11 +121,75 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
         .tiles {
           grid-template-columns: minmax(0, 1fr);
         }
+
+        .tiles.fill {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .tiles.fill .tile {
+          padding: 10px 12px;
+        }
+
+        .tiles.fill .tile-value {
+          font-size: 20px;
+        }
+      }
+
+      .tiles.fill {
+        flex: 1 1 0;
+        min-height: 0;
+        grid-auto-rows: minmax(min-content, 1fr);
+      }
+
+      .tiles.fill .tile-value {
+        margin-top: auto;
+      }
+
+      .tiles.list {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        justify-content: space-around;
+        min-height: 0;
+        gap: 4px;
+      }
+
+      .tiles.list .tile {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 0;
+        border-radius: 0;
+        background: none;
+      }
+
+      .tiles.list .tile-head {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 13px;
+      }
+
+      .tiles.list .tile-value {
+        font-size: 15px;
+      }
+
+      .tiles.list .tile-note {
+        display: none;
       }
     `,
   ];
 
   protected readonly cardSize = 5;
+
+  protected override defaultSize(): SizeSetting {
+    const rows = Math.ceil(this.items().length / this.columns());
+
+    if (rows <= 1) {
+      return 'small';
+    }
+
+    return rows <= 2 ? 'medium' : 'large';
+  }
 
   @state() private accessor loaded: ReadonlyMap<number, Loaded> = new Map();
   private loadedKey = '';
@@ -154,7 +219,8 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
     return this.config?.items && this.config.items.length > 0 ? this.config.items : DEFAULT_ITEMS;
   }
 
-  protected override updated(): void {
+  protected override updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
     this.loadStatistics();
   }
 
@@ -165,7 +231,7 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
 
     const ctx = { t: this.translator.t, f: this.formatter, now: Date.now() };
 
-    return html`<ha-card style=${style}>
+    return html`<ha-card class=${this.cardClass()} style=${style}>
       ${
         this.config?.show_header === false
           ? nothing
@@ -174,27 +240,49 @@ export class BlackoutRecordsCard extends BlackoutBaseCard<RecordsCardConfig> {
               <div class="header-side">${this.headerSide()}</div>
             </div>`
       }
-      ${this.renderTiles(this.items().map((item, index) => this.tile(item, index, ctx.f, null)))}
+      ${this.renderTiles(
+        this.items().map((item, index) => this.tile(item, index, ctx.f, null)),
+        this.size(),
+      )}
     </ha-card>`;
   }
 
   protected renderContent(ctx: RenderContext): TemplateResult {
-    return this.renderTiles(this.items().map((item, index) => this.tile(item, index, ctx.f, ctx)));
+    return this.renderTiles(
+      this.items().map((item, index) => this.tile(item, index, ctx.f, ctx)),
+      ctx.size,
+    );
   }
 
-  private renderTiles(tiles: readonly Tile[]): TemplateResult {
-    const columns = this.config?.columns ?? DEFAULT_RECORD_COLUMNS;
+  private columns(): number {
+    return this.config?.columns ?? DEFAULT_RECORD_COLUMNS;
+  }
 
-    return html`<div class="tiles" style=${styleMap({ '--record-columns': String(columns) })}>
+  private renderTiles(tiles: readonly Tile[], size: SizeSetting): TemplateResult {
+    const columns = this.columns();
+    const layout =
+      size === 'auto'
+        ? ''
+        : size === 'small' && tiles.length > Math.min(columns, 2)
+          ? 'list'
+          : 'fill';
+
+    return html`<div
+      class="tiles ${layout}"
+      style=${styleMap({ '--record-columns': String(columns) })}
+    >
       ${tiles.map(
-        (tile) =>
-          html`<div class="tile">
+        (tile, index) =>
+          html`<div
+            class="tile"
+            data-drop=${layout === 'list' ? String(tiles.length - index + 1) : nothing}
+          >
             <div class="tile-head">
               <ha-icon .icon=${tile.icon} style=${styleMap({ color: tile.color })}></ha-icon
               ><span>${tile.label}</span>
             </div>
             <div class="tile-value">${valueParts(tile.parts)}</div>
-            <div class="tile-note">${tile.note}</div>
+            <div class="tile-note" data-drop=${layout === 'fill' ? '1' : nothing}>${tile.note}</div>
           </div>`,
       )}
     </div>`;

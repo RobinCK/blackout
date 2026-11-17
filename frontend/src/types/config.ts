@@ -1,3 +1,5 @@
+import type { SizeSetting } from '../cards/size';
+
 export type ColorKey = 'on' | 'off' | 'possible' | 'emergency' | 'battery' | 'unknown';
 
 export type TapAction = 'more-info' | 'none';
@@ -22,6 +24,7 @@ export interface BaseCardConfig {
   readonly labels?: Readonly<Record<string, string>>;
   readonly colors?: Readonly<Partial<Record<ColorKey, string>>>;
   readonly tap_action?: TapAction;
+  readonly size?: SizeSetting;
 }
 
 export const STAT_KEYS = [

@@ -165,6 +165,11 @@ export const uk: Dictionary = {
 
   'editor.entity': 'Сутність черги',
   'editor.title': 'Заголовок',
+  'editor.size': 'Висота',
+  'editor.size_small': 'Мала · 3 ряди',
+  'editor.size_medium': 'Середня · 6 рядів',
+  'editor.size_large': 'Велика · 9 рядів',
+  'editor.size_auto': 'Авто · за вмістом',
   'editor.show_header': 'Показувати заголовок',
   'editor.language': 'Мова',
   'editor.time_zone': 'Часовий пояс',

@@ -34,6 +34,7 @@ function context(days: readonly QueueDay[], grid: string | null): RenderContext 
     now: NOW,
     t: translator.t,
     f: createFormatter(translator, 'Europe/Kyiv'),
+    size: 'auto',
   };
 }
 

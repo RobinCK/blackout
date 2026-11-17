@@ -43,6 +43,11 @@ export const tokens = css`
       transparent 3px 6px
     );
     display: block;
+    height: 100%;
+  }
+
+  [data-cut] {
+    display: none !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -60,6 +65,19 @@ export const cardStyles = css`
     padding: 18px 20px 16px;
     overflow: hidden;
     container-type: inline-size;
+  }
+
+  ha-card.fixed {
+    display: flex;
+    flex-direction: column;
+  }
+
+  ha-card.fixed > * {
+    flex: none;
+  }
+
+  ha-card.fixed > .foot {
+    margin-top: auto;
   }
 
   .header {
@@ -349,6 +367,16 @@ export const cardStyles = css`
     .stats {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .stats.one-row {
+      grid-template-columns: repeat(var(--stat-columns, 4), minmax(0, 1fr));
+    }
+  }
+
+  @container (max-width: 280px) {
+    .stats.one-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 `;
 
@@ -358,7 +386,7 @@ export const barStyles = css`
     grid-template-columns: var(--row-label-width, 56px) minmax(0, 1fr);
     align-items: center;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: var(--row-gap, 8px);
   }
 
   .row-label {

@@ -159,6 +159,11 @@ export const en = {
 
   'editor.entity': 'Queue entity',
   'editor.title': 'Title',
+  'editor.size': 'Height',
+  'editor.size_small': 'Small · 3 rows',
+  'editor.size_medium': 'Medium · 6 rows',
+  'editor.size_large': 'Large · 9 rows',
+  'editor.size_auto': 'Auto · fits the content',
   'editor.show_header': 'Show header',
   'editor.language': 'Language',
   'editor.time_zone': 'Time zone',

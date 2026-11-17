@@ -41,6 +41,26 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
         --bar-height: 12px;
       }
 
+      .rows.small .row {
+        --bar-height: 6px;
+        --row-gap: 2px;
+      }
+
+      .rows.small .row-label {
+        font-size: 10px;
+        line-height: 10px;
+      }
+
+      .rows.small + .axis-line {
+        height: 12px;
+        margin-top: 4px;
+      }
+
+      .rows.large .row {
+        --bar-height: 18px;
+        --row-gap: 10px;
+      }
+
       .rows .row-label {
         font-family: var(--bo-mono);
         font-size: 11px;
@@ -113,6 +133,24 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+
+      .foot.medium .next {
+        gap: 8px 12px;
+        margin-top: 12px;
+        padding: 10px 14px;
+      }
+
+      .foot.medium .next-block {
+        gap: 2px;
+      }
+
+      .foot.medium .next-value {
+        font-size: 16px;
+      }
+
+      .foot.medium .next-note {
+        display: none;
+      }
     `,
   ];
 
@@ -161,15 +199,25 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
       row.segments.some((item) => item.className === 'fill-skipped'),
     );
 
-    return html`${config?.show_stats === false || !hasGrid ? nothing : html`<div class="summary">${renderStats(this.summary(ctx))}</div>`}
-      <div class="rows">
+    const size = ctx.size;
+    const summary =
+      config?.show_stats === false || !hasGrid || size === 'small'
+        ? nothing
+        : html`<div class="summary">${renderStats(this.summary(ctx), size === 'medium')}</div>`;
+
+    return html`${summary}
+      <div class="rows ${size}">
         ${rows.map((row) => this.renderRow(ctx, row.day, row.segments, row.day.date === todayKey, hasGrid))}
       </div>
       <div class="axis-line mono">
         ${AXIS.map((hour) => html`<span style="left:${(hour / 24) * 100}%">${String(hour).padStart(2, '0')}</span>`)}
       </div>
-      ${config?.show_legend === false ? nothing : this.renderLegend(ctx, hasGrid, skipped)}
-      ${config?.show_next === false ? nothing : this.renderNext(ctx)}`;
+      ${config?.show_legend === false || size === 'small' ? nothing : this.renderLegend(ctx, hasGrid, skipped)}
+      ${
+        config?.show_next === false || size === 'small'
+          ? nothing
+          : html`<div class="foot ${size}" data-drop="3">${this.renderNext(ctx)}</div>`
+      }`;
   }
 
   private rowSegments(ctx: RenderContext, day: QueueDay, hasGrid: boolean): BarSegment[] {
@@ -250,7 +298,7 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
   private renderLegend(ctx: RenderContext, hasGrid: boolean, skipped: boolean): TemplateResult {
     const { t } = ctx;
 
-    return html`<div class="legend">
+    return html`<div class="legend" data-drop="1">
       ${hasGrid ? html`<span class="legend-item"><span class="swatch on"></span>${t('legend.grid_on')}</span>` : nothing}
       <span class="legend-item"><span class="swatch off"></span>${t('legend.off')}</span>
       ${
@@ -334,7 +382,7 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
       </div>
       ${
         battery && soc !== null
-          ? html`<div class="next-block">
+          ? html`<div class="next-block" data-drop="2">
               <span class="next-label">${t('week.battery_forecast', { time: f.time(start) })}</span>
               <span class="next-value tone-${enough ? 'on' : 'possible'}"
                 >${enough ? '✓' : '!'} ${f.number(soc, 0)} %</span

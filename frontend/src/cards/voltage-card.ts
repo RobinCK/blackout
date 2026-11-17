@@ -1,4 +1,4 @@
-import { css, html, nothing, type TemplateResult } from 'lit';
+import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
 import type { styleMap } from 'lit/directives/style-map.js';
 
@@ -20,6 +20,7 @@ import type { HassEntity, HomeAssistant } from '../types/ha';
 import type { QueuePayload } from '../types/payload';
 import type { Formatter } from '../utils/format';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import type { SizeSetting } from './size';
 import { renderStats, text, windowText, type StatView } from './parts';
 import { findQueueEntity } from './stub';
 
@@ -36,6 +37,7 @@ interface View {
   readonly t: RenderContext['t'];
   readonly f: Formatter;
   readonly payload: QueuePayload | undefined;
+  readonly size: SizeSetting;
 }
 
 interface Phase extends VoltagePhase {
@@ -80,7 +82,7 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
 
       .track {
         position: relative;
-        height: ${TRACK}px;
+        height: var(--track, ${TRACK}px);
         overflow: hidden;
         border-radius: 6px;
         background: var(--bo-surface);
@@ -244,7 +246,8 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
     return this.inNorm(ctx);
   }
 
-  protected override updated(): void {
+  protected override updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
     this.loadVoltage();
   }
 
@@ -258,9 +261,10 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
       t: (key, params) => this.translator.t(key, params),
       f: this.formatter,
       payload: undefined,
+      size: this.size(),
     };
 
-    return html`<ha-card style=${style}>
+    return html`<ha-card class=${this.cardClass()} style=${style}>
       ${
         this.config?.show_header === false
           ? nothing
@@ -347,10 +351,13 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
     const report = voltageReport(this.slots, limits, outages);
     const low = limits.min - BELOW;
     const high = limits.max + ABOVE;
+    const small = view.size === 'small';
+    const track =
+      view.size === 'small' ? 22 : view.size === 'medium' ? 40 : view.size === 'large' ? 84 : TRACK;
     const scale = (volts: number): number =>
-      ((high - Math.min(high, Math.max(low, volts))) / (high - low)) * TRACK;
+      ((high - Math.min(high, Math.max(low, volts))) / (high - low)) * track;
 
-    return html`<div class="phases">
+    return html`<div class="phases" style="--track:${track}px">
         ${phases.map((phase, index) =>
           this.renderPhase(view, phase, report.phases[index], limits, scale),
         )}
@@ -368,8 +375,17 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
           <span></span>
         </div>
       </div>
-      ${this.renderLegend(view, phases, limits)}
-      ${renderStats(this.stats(view, phases, report.low, report.high, outages, start))}`;
+      ${small ? nothing : this.renderLegend(view, phases, limits)}
+      ${
+        small
+          ? nothing
+          : html`<div class="foot" data-drop="2">
+              ${renderStats(
+                this.stats(view, phases, report.low, report.high, outages, start),
+                view.size === 'medium',
+              )}
+            </div>`
+      }`;
   }
 
   private renderPhase(
@@ -431,7 +447,7 @@ export class BlackoutVoltageCard extends BlackoutBaseCard<VoltageCardConfig> {
   ): TemplateResult {
     const { t, f } = view;
 
-    return html`<div class="legend">
+    return html`<div class="legend" data-drop="1">
       <span class="legend-item"
         ><span class="swatch range-swatch"></span>${t('legend.voltage_input')}</span
       >

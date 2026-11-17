@@ -8,6 +8,7 @@ import type { HassEntity, HomeAssistant } from '../types/ha';
 import { loadHaComponents } from './load-ha-components';
 import {
   layoutFor,
+  resetRows,
   stripDefaults,
   type BatteryLayout,
   type BatterySensor,
@@ -129,11 +130,16 @@ export class BlackoutCardEditor extends LitElement {
     const layout = layoutFor(config.type, config, (key) => this.t(key));
     const data = { ...layout.defaults, ...config };
     const onChange = (value: EditableConfig): void => {
-      this.commit({
-        ...stripDefaults(value, layout.defaults),
-        entity: config.entity,
-        battery: config.battery,
-      });
+      this.commit(
+        resetRows(
+          {
+            ...stripDefaults(value, layout.defaults),
+            entity: config.entity,
+            battery: config.battery,
+          },
+          config,
+        ),
+      );
     };
 
     return html`<div class="editor">

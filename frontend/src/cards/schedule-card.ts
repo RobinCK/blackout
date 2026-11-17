@@ -8,6 +8,7 @@ import type { DayKey, ScheduleCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
 import type { QueueDay, SlotState } from '../types/payload';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import type { SizeSetting } from './size';
 import { describeSlot, type BarHover } from './hover';
 import { findDay, hoursParts, renderStats, text, windowText, type StatView } from './parts';
 import { findQueueEntity } from './stub';
@@ -205,6 +206,12 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
 
   protected readonly cardSize = 5;
 
+  protected override defaultSize(): SizeSetting {
+    return this.config?.show_windows === false && this.config.show_totals === false
+      ? 'small'
+      : 'medium';
+  }
+
   static getConfigElement(): HTMLElement {
     return document.createElement('blackout-card-editor');
   }
@@ -241,6 +248,8 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
       days.flatMap(({ day }) => (isPublished(day) ? [...day.slots] : ['unknown'])),
     );
 
+    const small = ctx.size === 'small';
+
     return html`${config?.show_source === false ? nothing : this.renderSource(ctx)}
       ${days.map(({ key, day }) => this.renderDay(ctx, key, day))}
       <div class="axis mono">
@@ -248,17 +257,19 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
       </div>
       ${config?.show_legend === false ? nothing : this.renderLegend(ctx, states)}
       ${
-        config?.show_windows === false
+        config?.show_windows === false || small
           ? nothing
-          : html`<div class="windows">
+          : html`<div class="windows" data-drop="4">
               ${days.map(({ key, day }) => this.renderWindows(ctx, key, day, battery))}
             </div>`
       }
       ${
-        config?.show_totals === false
+        config?.show_totals === false || small
           ? nothing
-          : html`<div class="divider"></div>
-              ${renderStats(this.totals(ctx))}`
+          : html`<div class="foot" data-drop="3">
+              <div class="divider"></div>
+              ${renderStats(this.totals(ctx, ctx.size === 'medium'), ctx.size === 'medium')}
+            </div>`
       }`;
   }
 
@@ -269,7 +280,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
       ? t('schedule.source_updated', { source, ago: f.relative(payload.source.last_success, now) })
       : source;
 
-    return html`<div class="source">
+    return html`<div class="source" data-drop="2">
       <span>${updated}</span>
       <span class="indicator tone-${payload.emergency ? 'emergency' : 'on'}"
         >${t(payload.emergency ? 'schedule.emergency_active' : 'schedule.emergency_none')}</span
@@ -339,7 +350,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
   private renderLegend(ctx: RenderContext, states: ReadonlySet<string>): TemplateResult {
     const items: readonly SlotState[] = ['on', 'off', 'possible', 'unknown'];
 
-    return html`<div class="legend">
+    return html`<div class="legend" data-drop="1">
       ${items
         .filter((state) => state === 'on' || state === 'off' || states.has(state))
         .map(
@@ -432,14 +443,14 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
     return outageNow && powerBack ? Date.parse(powerBack) : start;
   }
 
-  private totals(ctx: RenderContext): StatView[] {
+  private totals(ctx: RenderContext, short = false): StatView[] {
     const { t, f } = ctx;
     const today = findDay(ctx, 0);
     const tomorrow = findDay(ctx, 1);
 
     return [
       {
-        label: t('stat.without_power_today'),
+        label: t(short ? 'stat.today' : 'stat.without_power_today'),
         parts: hoursParts(f, isPublished(today) ? today.outage_hours : null),
       },
       {
@@ -447,7 +458,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
         parts: hoursParts(f, isPublished(today) ? today.longest_hours : null),
       },
       {
-        label: t('stat.without_power_tomorrow'),
+        label: t(short ? 'stat.tomorrow' : 'stat.without_power_tomorrow'),
         parts: isPublished(tomorrow) ? hoursParts(f, tomorrow.outage_hours) : text(t('value.none')),
       },
     ];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { CARD_DEFAULTS } from '../src/defaults';
-import { layoutFor, stripDefaults, type HaFormSchema } from '../src/editor/schema';
+import { layoutFor, resetRows, stripDefaults, type HaFormSchema } from '../src/editor/schema';
 
 const t = (key: string): string => key;
 
@@ -35,7 +35,7 @@ describe('editor layout', () => {
       t,
     );
 
-    expect(names(layout.main)).toEqual(['show_header', 'show_timeline', 'show_stats']);
+    expect(names(layout.main)).toEqual(['size', 'show_header', 'show_timeline', 'show_stats']);
     expect(layout.battery).toBeNull();
     expect(names(layout.advanced)).not.toContain('tap_action');
   });
@@ -54,5 +54,18 @@ describe('editor layout', () => {
     );
 
     expect(value).toEqual({ type: 'x', show_now: false });
+  });
+
+  it('drops the grid rows when the height changes', () => {
+    expect(
+      resetRows({ size: 'small', grid_options: { rows: 7, columns: 6 } }, { size: 'large' }),
+    ).toEqual({
+      size: 'small',
+      grid_options: { columns: 6 },
+    });
+    expect(resetRows({ size: 'small', grid_options: { rows: 7 } }, { size: 'small' })).toEqual({
+      size: 'small',
+      grid_options: { rows: 7 },
+    });
   });
 });

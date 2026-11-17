@@ -6,6 +6,7 @@ import {
   VOLTAGE_CARD_TYPE,
   WEEK_CARD_TYPE,
 } from './const';
+import type { CardSize } from './cards/size';
 import type { BatteryConfig, DayKey } from './types/config';
 
 export type ConfigValues = Readonly<Record<string, unknown>>;
@@ -21,6 +22,15 @@ export const DEFAULT_VOLTAGE_MIN = 207;
 export const DEFAULT_VOLTAGE_MAX = 253;
 
 const COMMON: ConfigValues = { show_header: true, tap_action: 'more-info' };
+
+export const SIZE_RANGES: Readonly<Record<string, readonly [CardSize, CardSize]>> = {
+  [STATUS_CARD_TYPE]: ['small', 'medium'],
+  [SCHEDULE_CARD_TYPE]: ['small', 'medium'],
+  [WEEK_CARD_TYPE]: ['small', 'large'],
+  [RECORDS_CARD_TYPE]: ['small', 'large'],
+  [BATTERY_CARD_TYPE]: ['small', 'medium'],
+  [VOLTAGE_CARD_TYPE]: ['small', 'large'],
+};
 
 export const CARD_DEFAULTS: Readonly<Record<string, ConfigValues>> = {
   [STATUS_CARD_TYPE]: {

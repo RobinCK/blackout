@@ -95,6 +95,11 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
       .hero-value .unit {
         margin: 0 6px 0 2px;
         font-size: 13px;
+        line-height: 1;
+      }
+
+      .hero > div:first-child {
+        flex: none;
       }
 
       .hero-side {
@@ -116,6 +121,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
       }
 
       .hero-note {
+        max-width: 100%;
         overflow: hidden;
         color: var(--bo-muted);
         font-size: 11px;
@@ -125,6 +131,22 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
 
       .timeline {
         margin-top: 16px;
+      }
+
+      .hero.small .hero-value {
+        font-size: 30px;
+        line-height: 34px;
+      }
+
+      .timeline.small {
+        --row-gap: 6px;
+        margin-top: 10px;
+      }
+
+      .timeline.medium {
+        --bar-height: 18px;
+        --row-gap: 10px;
+        margin-top: 18px;
       }
     `,
   ];
@@ -174,7 +196,16 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
     const group = this.group(ctx);
     const stats = config.show_stats === false ? [] : this.stats(ctx, group, battery);
 
-    return html`<div class="hero">
+    const size = ctx.size;
+    const footer =
+      stats.length > 0 && size !== 'small'
+        ? html`<div class="foot">
+            <div class="divider"></div>
+            ${renderStats(stats)}
+          </div>`
+        : nothing;
+
+    return html`<div class="hero ${size}">
         <div>
           <div class="hero-label">${hero.label}</div>
           <div class="hero-value tone-${hero.tone}">
@@ -189,13 +220,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
           ${hero.note ? html`<span class="hero-note">${hero.note}</span>` : nothing}
         </div>
       </div>
-      ${config.show_timeline === false ? nothing : this.renderTimeline(ctx, battery)}
-      ${
-        stats.length > 0
-          ? html`<div class="divider"></div>
-              ${renderStats(stats)}`
-          : nothing
-      }`;
+      ${config.show_timeline === false ? nothing : this.renderTimeline(ctx, battery)} ${footer}`;
   }
 
   private group(ctx: RenderContext): StatGroup {
@@ -385,7 +410,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
       describeSlot(ctx, slot, { title: windowText(f, slot, slot + SLOT_MS), emergency: true }),
     );
 
-    return html`<div class="timeline">
+    return html`<div class="timeline ${ctx.size}">
       <div class="row">
         <span class="row-label">${t('row.grid')}</span>${renderBar(
           segments,
@@ -397,7 +422,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
       </div>
       ${
         forecast
-          ? html`<div class="row">
+          ? html`<div class="row" data-drop="2">
               <span class="row-label">${t('row.battery')}</span>${renderBar(
                 [
                   { from, to: forecast.from, className: 'fill-faint' },
@@ -415,7 +440,7 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
             </div>`
           : nothing
       }
-      <div class="row axis">
+      <div class="row axis" data-drop="1">
         <span class="row-label"></span>
         <div class="ticks">
           ${ticks.map((tick) => html`<span class="tick mono" style="left:${toPercent(tick, from, to)}%">${f.time(tick).slice(0, 2)}</span>`)}

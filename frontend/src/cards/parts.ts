@@ -48,12 +48,18 @@ export function renderBadge(
   >`;
 }
 
-export function renderStats(stats: readonly StatView[]): TemplateResult | typeof nothing {
+export function renderStats(
+  stats: readonly StatView[],
+  row = false,
+): TemplateResult | typeof nothing {
   if (stats.length === 0) {
     return nothing;
   }
 
-  return html`<div class="stats" style="--stat-columns: ${Math.min(stats.length, 4)}">
+  return html`<div
+    class="stats ${row ? 'one-row' : ''}"
+    style="--stat-columns: ${Math.min(stats.length, 4)}"
+  >
     ${stats.map(
       (stat) =>
         html`<div class="stat">

@@ -6,7 +6,8 @@ import {
   VOLTAGE_CARD_TYPE,
   WEEK_CARD_TYPE,
 } from '../const';
-import { CARD_DEFAULTS, type ConfigValues } from '../defaults';
+import { sizesBetween } from '../cards/size';
+import { CARD_DEFAULTS, SIZE_RANGES, type ConfigValues } from '../defaults';
 import { LANGUAGES } from '../i18n';
 
 export interface HaFormSelectorField {
@@ -257,15 +258,48 @@ function cardLayout(
   }
 }
 
+function sizeField(cardType: string, t: Translate): HaFormSelectorField {
+  const [min, max] = SIZE_RANGES[cardType] ?? ['small', 'large'];
+
+  return {
+    name: 'size',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: [...sizesBetween(min, max), 'auto'].map((value) => ({
+          value,
+          label: t(`editor.size_${value}`),
+        })),
+      },
+    },
+  };
+}
+
 export function layoutFor(type: string, config: EditorConfig, t: Translate): EditorLayout {
   const cardType = type.replace(/^custom:/, '');
   const clickable = enabled(config, 'show_header') && Boolean(config.entity);
+  const layout = cardLayout(cardType, config, t);
 
   return {
-    ...cardLayout(cardType, config, t),
+    ...layout,
+    main: [sizeField(cardType, t), ...layout.main],
     defaults: CARD_DEFAULTS[cardType] ?? {},
     advanced: advanced(t, clickable),
   };
+}
+
+export function resetRows<T extends object>(next: T, previous: object): T {
+  const options: unknown = (next as { readonly grid_options?: unknown }).grid_options;
+  const size: unknown = (next as { readonly size?: unknown }).size;
+  const before: unknown = (previous as { readonly size?: unknown }).size;
+
+  if (size === before || typeof options !== 'object' || options === null || !('rows' in options)) {
+    return next;
+  }
+
+  const rest = Object.fromEntries(Object.entries(options).filter(([key]) => key !== 'rows'));
+
+  return { ...next, grid_options: Object.keys(rest).length > 0 ? rest : undefined };
 }
 
 export function stripDefaults<T extends object>(value: T, defaults: ConfigValues): T {

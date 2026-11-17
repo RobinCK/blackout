@@ -1,4 +1,4 @@
-import { css, html, nothing, svg, type TemplateResult } from 'lit';
+import { css, html, nothing, svg, type PropertyValues, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
 
@@ -12,6 +12,7 @@ import type { HassEntity, HomeAssistant } from '../types/ha';
 import type { QueuePayload } from '../types/payload';
 import { startOfDayIn, type Formatter } from '../utils/format';
 import { BlackoutBaseCard, type RenderContext } from './base-card';
+import type { SizeSetting } from './size';
 import { renderBadge, renderStats, text, windowText, type StatView, type Tone } from './parts';
 import { findQueueEntity } from './stub';
 
@@ -28,6 +29,7 @@ interface View {
   readonly t: RenderContext['t'];
   readonly f: Formatter;
   readonly payload: QueuePayload | undefined;
+  readonly size: SizeSetting;
 }
 
 interface Day {
@@ -35,7 +37,10 @@ interface Day {
   readonly end: number;
 }
 
-const y = (soc: number): number => TOP + ((100 - soc) / 100) * (HEIGHT - TOP);
+const scaleY =
+  (height: number) =>
+  (soc: number): number =>
+    TOP + ((100 - soc) / 100) * (height - TOP);
 
 function merge(windows: readonly Window[]): Window[] {
   const sorted = [...windows].sort((a, b) => a.start - b.start);
@@ -71,7 +76,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     css`
       .chart {
         position: relative;
-        height: ${HEIGHT}px;
+        height: var(--chart, ${HEIGHT}px);
       }
 
       .chart svg {
@@ -241,7 +246,8 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     return this.badge(ctx);
   }
 
-  protected override updated(): void {
+  protected override updated(changed: PropertyValues<this>): void {
+    super.updated(changed);
     this.loadHistory();
   }
 
@@ -255,9 +261,10 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
       t: (key, params) => this.translator.t(key, params),
       f: this.formatter,
       payload: undefined,
+      size: this.size(),
     };
 
-    return html`<ha-card style=${style}>
+    return html`<ha-card class=${this.cardClass()} style=${style}>
       ${
         this.config?.show_header === false
           ? nothing
@@ -372,11 +379,20 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     const { shown, ahead } = this.outages(view, day);
     const forecast = battery ? forecastDay(battery, view.now, day.end, ahead) : null;
 
+    const small = view.size === 'small';
+
     return html`${this.renderChart(view, day, samples, battery, shown, forecast)}
       <div class="axis-labels">
         ${AXIS.map((hour) => html`<span>${String(hour).padStart(2, '0')}</span>`)}
       </div>
-      ${this.renderLegend(view, shown, forecast)} ${renderStats(this.stats(view, samples, battery))}`;
+      ${small ? nothing : this.renderLegend(view, shown, forecast)}
+      ${
+        small
+          ? nothing
+          : html`<div class="foot" data-drop="2">
+              ${renderStats(this.stats(view, samples, battery), view.size === 'medium')}
+            </div>`
+      }`;
   }
 
   private renderChart(
@@ -388,6 +404,8 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     forecast: BatteryForecast | null,
   ): TemplateResult {
     const { t, f } = view;
+    const height = view.size === 'small' ? 80 : view.size === 'medium' ? 166 : HEIGHT;
+    const y = scaleY(height);
     const x = (time: number): number => toPercent(time, day.start, day.end);
     const fact = samples.filter((sample) => sample.time >= day.start);
     const line = fact.map((sample) => `${x(sample.time) * 10},${y(sample.value)}`).join(' L');
@@ -397,7 +415,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     const ahead = forecast?.points.map((point) => `${x(point.time) * 10},${y(point.soc)}`);
     const first = outages.find((window) => window.end > view.now);
 
-    return html`<div class="chart">
+    return html`<div class="chart" style="--chart:${height}px">
       ${outages.map(
         (window) =>
           html`<span
@@ -424,10 +442,10 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
       }
       <span class="grid-label" style="top:${y(100) + 2}px">100 %</span>
       <span class="grid-label" style="top:${y(50) - 14}px">50 %</span>
-      <svg viewBox="0 0 1000 ${HEIGHT}" preserveAspectRatio="none" aria-hidden="true">
+      <svg viewBox="0 0 1000 ${height}" preserveAspectRatio="none" aria-hidden="true">
         ${
           line && last
-            ? svg`<path d="M${line} L${x(last.time) * 10},${HEIGHT} L${x(fact[0]?.time ?? day.start) * 10},${HEIGHT} Z"
+            ? svg`<path d="M${line} L${x(last.time) * 10},${height} L${x(fact[0]?.time ?? day.start) * 10},${height} Z"
                 fill="var(--bo-battery)" fill-opacity="0.12"></path>
               <path d="M${line}" fill="none" stroke="var(--bo-battery)" stroke-width="2"
                 stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>`
@@ -446,6 +464,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
         min && last && min.time < last.time
           ? html`<span class="dot hollow" style="left:${x(min.time)}%;top:${y(min.value)}px"></span>
               ${this.pointLabel(
+                height,
                 x(min.time),
                 y(min.value) + 6,
                 `${f.number(min.value, 0)} % · ${f.time(min.time)}`,
@@ -456,6 +475,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
         last
           ? html`<span class="dot" style="left:${x(last.time)}%;top:${y(last.value)}px"></span>
               ${this.pointLabel(
+                height,
                 x(last.time),
                 y(last.value) - 18,
                 `${f.number(last.value, 0)} %`,
@@ -467,6 +487,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
       ${
         forecast?.full
           ? this.pointLabel(
+              height,
               x(forecast.full),
               y(100) + 6,
               t('battery_card.full_at', { time: f.time(forecast.full) }),
@@ -477,6 +498,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
   }
 
   private pointLabel(
+    height: number,
     left: number,
     top: number,
     label: string,
@@ -488,7 +510,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
 
     return html`<span
       class="point-label ${current ? 'current' : ''}"
-      style=${styleMap({ ...side, top: `${Math.max(0, Math.min(HEIGHT - 12, top))}px` })}
+      style=${styleMap({ ...side, top: `${Math.max(0, Math.min(height - 12, top))}px` })}
       >${label}</span
     >`;
   }
@@ -501,7 +523,7 @@ export class BlackoutBatteryCard extends BlackoutBaseCard<BatteryCardConfig> {
     const { t, f } = view;
     const only = outages.length === 1 ? outages[0] : undefined;
 
-    return html`<div class="legend">
+    return html`<div class="legend" data-drop="1">
       <span class="legend-item"><span class="swatch line"></span>${t('legend.fact')}</span>
       ${
         forecast
