@@ -25,7 +25,7 @@ from custom_components.blackout.const import (
 )
 from custom_components.blackout.payload import build_payload
 from custom_components.blackout.regions import OE_OUTAGE_DATA
-from custom_components.blackout.sources import svitlo_live, ua_power_status
+from custom_components.blackout.sources import cherkasyoblenergo_api, svitlo_live, ua_power_status
 
 from .conftest import load_fixture
 
@@ -34,6 +34,7 @@ GRID = "binary_sensor.deye_master_grid_connected"
 
 
 def _mock_sources(aioclient_mock: AiohttpClientMocker, *, mirror: Any = None) -> None:
+    aioclient_mock.get(cherkasyoblenergo_api.URL, status=503)
     aioclient_mock.get(
         OE_OUTAGE_DATA.format("Cherkasyoblenergo"),
         json=mirror if mirror is not None else load_fixture("dtek_cherkasy.json"),

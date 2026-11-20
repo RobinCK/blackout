@@ -60,7 +60,8 @@ picker.
 | Dnipropetrovsk Oblast | DTEK DnEM | YASNO API, outage-data-ua, svitlo.live |
 | Dnipropetrovsk Oblast | CEK | YASNO API, svitlo.live |
 | Odesa Oblast | DTEK OEM | outage-data-ua, svitlo.live |
-| Cherkasy, Chernihiv, Ivano-Frankivsk, Kharkiv, Khmelnytskyi, Lviv, Poltava, Rivne, Ternopil, Zakarpattia, Zhytomyr | oblenergo | OE_OUTAGE_DATA, svitlo.live |
+| Cherkasy Oblast | Cherkasyoblenergo | cherkasyoblenergo-api, OE_OUTAGE_DATA, svitlo.live |
+| Chernihiv, Ivano-Frankivsk, Kharkiv, Khmelnytskyi, Lviv, Poltava, Rivne, Ternopil, Zakarpattia, Zhytomyr | oblenergo | OE_OUTAGE_DATA, svitlo.live |
 | Zaporizhzhia Oblast | Zaporizhzhiaoblenergo | gpv-zoe-zaporizhzhia, OE_OUTAGE_DATA, svitlo.live |
 | Vinnytsia Oblast | Vinnytsiaoblenergo | gpv-voe-vinnytsia mirrors |
 | Chernivtsi Oblast | Chernivtsioblenergo | svitlo.live (groups 1–12) |
@@ -76,8 +77,11 @@ Mirrors: [Baskerville42/outage-data-ua](https://github.com/Baskerville42/outage-
 [yaroslav2901/OE_OUTAGE_DATA](https://github.com/yaroslav2901/OE_OUTAGE_DATA),
 [milkmann/gpv-zoe-zaporizhzhia](https://github.com/milkmann/gpv-zoe-zaporizhzhia),
 [olnet93/gpv-voe-vinnytsia](https://github.com/olnet93/gpv-voe-vinnytsia),
-[svitlo.live](https://svitlo.live). All of them are unofficial: the only binding schedule is the one
-your operator publishes, and outages are possible outside of it.
+[svitlo.live](https://svitlo.live), and
+[sigmanor/cherkasyoblenergo-api](https://github.com/Sigmanor/cherkasyoblenergo-api) (its public instance),
+which parses every Cherkasyoblenergo post: an update during the day replaces the schedule from the half
+hour it was published in, the hours before it keep the previous version. All of them are unofficial: the
+only binding schedule is the one your operator publishes, and outages are possible outside of it.
 
 ## Installation
 

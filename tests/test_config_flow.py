@@ -17,13 +17,14 @@ from custom_components.blackout.const import (
     SUBENTRY_QUEUE,
 )
 from custom_components.blackout.regions import OE_OUTAGE_DATA
-from custom_components.blackout.sources import svitlo_live, ua_power_status
+from custom_components.blackout.sources import cherkasyoblenergo_api, svitlo_live, ua_power_status
 
 from .conftest import load_fixture
 
 
 @pytest.fixture(autouse=True)
 def sources(aioclient_mock: AiohttpClientMocker) -> None:
+    aioclient_mock.get(cherkasyoblenergo_api.URL, status=503)
     aioclient_mock.get(OE_OUTAGE_DATA.format("Cherkasyoblenergo"), json=load_fixture("dtek_cherkasy.json"))
     aioclient_mock.get(OE_OUTAGE_DATA.format("Poltavaoblenergo"), json=load_fixture("dtek_cherkasy.json"))
     aioclient_mock.get(svitlo_live.URL, json=load_fixture("svitlo_live.json"))

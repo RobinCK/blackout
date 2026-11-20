@@ -8,6 +8,7 @@ import pytest
 
 from custom_components.blackout.models import DayStatus, RegionStatus, SlotState, encode_slots
 from custom_components.blackout.sources.base import SourceError
+from custom_components.blackout.sources.cherkasyoblenergo_api import parse as parse_cherkasyoblenergo_api
 from custom_components.blackout.sources.dtek_mirror import parse_fact
 from custom_components.blackout.sources.mykolaiv import parse as parse_mykolaiv
 from custom_components.blackout.sources.svitlo_live import parse_region
@@ -97,3 +98,41 @@ def test_ua_power_status() -> None:
 def test_ua_power_status_stale() -> None:
     with pytest.raises(SourceError):
         parse_regions(load_fixture("ua_power_status.json"), datetime.fromisoformat("2026-11-15T09:00:00+00:00"))
+
+
+def _off(*ranges: tuple[int, int]) -> str:
+    codes = ["1"] * 48
+
+    for start, end in ranges:
+        codes[start:end] = ["0"] * (end - start)
+
+    return "".join(codes)
+
+
+def test_cherkasyoblenergo_api_updates_replace_the_rest_of_the_day() -> None:
+    feed = parse_cherkasyoblenergo_api(load_fixture("cherkasyoblenergo_api.json"), "cherkasyoblenergo-api")
+    today = feed.group_days("5.1")[date(2026, 11, 20)]
+
+    assert encode_slots(today.slots) == _off((16, 20), (29, 34), (40, 46))
+    assert today.status == DayStatus.SCHEDULE
+    assert today.updated_at == datetime.fromisoformat("2026-11-20T21:29:00+02:00")
+
+
+def test_cherkasyoblenergo_api_next_day() -> None:
+    feed = parse_cherkasyoblenergo_api(load_fixture("cherkasyoblenergo_api.json"), "cherkasyoblenergo-api")
+    tomorrow = feed.group_days("5.1")[date(2026, 11, 21)]
+
+    assert encode_slots(tomorrow.slots) == _off((4, 8), (16, 22), (32, 36), (42, 48))
+    assert feed.updated_at == datetime.fromisoformat("2026-11-20T21:33:00+02:00")
+
+
+def test_cherkasyoblenergo_api_cancelled_and_empty_groups() -> None:
+    feed = parse_cherkasyoblenergo_api(load_fixture("cherkasyoblenergo_api.json"), "cherkasyoblenergo-api")
+
+    assert feed.group_days("3.1")[date(2026, 11, 18)].status == DayStatus.NO_OUTAGES
+    assert encode_slots(feed.group_days("1.2")[date(2026, 11, 20)].slots) == _off((27, 30), (34, 40))
+
+
+def test_cherkasyoblenergo_api_rejects_unknown_format() -> None:
+    with pytest.raises(SourceError):
+        parse_cherkasyoblenergo_api({"error": "rate limit"}, "cherkasyoblenergo-api")
