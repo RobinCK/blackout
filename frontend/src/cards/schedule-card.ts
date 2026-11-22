@@ -2,7 +2,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 
 import { SCHEDULE_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, socAt, type BatteryState } from '../data/battery';
-import { isPublished, outageWindows, SLOT_MS, toPercent } from '../data/timeline';
+import { isPublished, isRemoved, outageWindows, SLOT_MS, toPercent } from '../data/timeline';
 import { DEFAULT_SCHEDULE_DAYS } from '../defaults';
 import type { DayKey, ScheduleCardConfig } from '../types/config';
 import type { HomeAssistant } from '../types/ha';
@@ -247,6 +247,9 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
     const states = new Set<string>(
       days.flatMap(({ day }) => (isPublished(day) ? [...day.slots] : ['unknown'])),
     );
+    const removed = days.some(
+      ({ day }) => isPublished(day) && day.slots.some((_, index) => isRemoved(day, index)),
+    );
 
     const small = ctx.size === 'small';
 
@@ -255,7 +258,7 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
       <div class="axis mono">
         ${AXIS.map((hour) => html`<span style="left:${(hour / 24) * 100}%">${String(hour).padStart(2, '0')}</span>`)}
       </div>
-      ${config?.show_legend === false ? nothing : this.renderLegend(ctx, states)}
+      ${config?.show_legend === false ? nothing : this.renderLegend(ctx, states, removed)}
       ${
         config?.show_windows === false || small
           ? nothing
@@ -312,9 +315,12 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
         ${HOURS.map(
           (hour) =>
             html`<div class="cell">
-              <span class="fill-${slots[hour * 2] ?? 'unknown'}" data-slot=${hour * 2}></span>
               <span
-                class="fill-${slots[hour * 2 + 1] ?? 'unknown'}"
+                class="fill-${this.cellState(day, slots, hour * 2)}"
+                data-slot=${hour * 2}
+              ></span>
+              <span
+                class="fill-${this.cellState(day, slots, hour * 2 + 1)}"
                 data-slot=${hour * 2 + 1}
               ></span>
             </div>`,
@@ -347,7 +353,17 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
     };
   }
 
-  private renderLegend(ctx: RenderContext, states: ReadonlySet<string>): TemplateResult {
+  private cellState(day: QueueDay | undefined, slots: readonly SlotState[], index: number): string {
+    const state = slots[index] ?? 'unknown';
+
+    return day && state !== 'unknown' && isRemoved(day, index) ? 'skipped' : state;
+  }
+
+  private renderLegend(
+    ctx: RenderContext,
+    states: ReadonlySet<string>,
+    removed: boolean,
+  ): TemplateResult {
     const items: readonly SlotState[] = ['on', 'off', 'possible', 'unknown'];
 
     return html`<div class="legend" data-drop="1">
@@ -359,6 +375,13 @@ export class BlackoutScheduleCard extends BlackoutBaseCard<ScheduleCardConfig> {
               ><span class="swatch ${state}"></span>${ctx.t(`legend.${state}`)}</span
             >`,
         )}
+      ${
+        removed
+          ? html`<span class="legend-item"
+              ><span class="swatch skipped"></span>${ctx.t('legend.removed')}</span
+            >`
+          : nothing
+      }
     </div>`;
   }
 

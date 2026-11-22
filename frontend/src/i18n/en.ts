@@ -96,6 +96,7 @@ export const en = {
   'legend.grid_on': 'grid on',
   'legend.by_schedule': 'by schedule',
   'legend.skipped': 'scheduled, no outage',
+  'legend.removed': 'removed from schedule',
   'legend.emergency': 'emergency',
   'legend.fact': 'actual',
   'legend.forecast': 'forecast',

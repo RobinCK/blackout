@@ -1,6 +1,6 @@
 [project]
 name = "blackout"
-version = "0.2.4"
+version = "0.2.5"
 description = "Home Assistant integration for planned and emergency power outages in Ukraine"
 requires-python = ">=3.13"
 license = "MIT"

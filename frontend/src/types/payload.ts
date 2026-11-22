@@ -30,6 +30,7 @@ export interface QueueDay {
   readonly start: string;
   readonly status: DayStatus;
   readonly slots: readonly SlotState[];
+  readonly planned?: readonly SlotState[];
   readonly updated_at: string | null;
   readonly versions: number;
   readonly outage_hours: number | null;

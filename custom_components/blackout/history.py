@@ -11,7 +11,19 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, MAX_VERSIONS_PER_DAY
-from .models import KYIV, DaySchedule, DayStatus, OutageInterval, decode_slots, encode_slots
+from .models import (
+    KYIV,
+    SLOT_CODES,
+    SLOTS_PER_DAY,
+    DaySchedule,
+    DayStatus,
+    OutageInterval,
+    Slots,
+    SlotState,
+    decode_slots,
+    encode_slots,
+    slot_start,
+)
 
 STORAGE_VERSION = 1
 SAVE_DELAY = 10
@@ -97,6 +109,25 @@ class QueueHistory:
             status = DayStatus.WAITING
 
         return DaySchedule(day, decode_slots(stored["slots"]), status, _parse(stored["updated_at"]))
+
+    def planned(self, day: date, slots: Slots) -> Slots:
+        """The day's slots, plus the outages of earlier versions that were still ahead when published."""
+        stored = self._data["schedules"].get(day.isoformat())
+        planned = list(slots)
+        off = SLOT_CODES[SlotState.OFF]
+
+        for version in stored["versions"] if stored else []:
+            at = _parse(version.get("at"))
+            codes = version.get("slots", "")
+
+            if at is None or len(codes) != SLOTS_PER_DAY:
+                continue
+
+            for index, code in enumerate(codes):
+                if code == off and slot_start(day, index) >= at:
+                    planned[index] = SlotState.OFF
+
+        return tuple(planned)
 
     def versions(self, day: date) -> int:
         stored = self._data["schedules"].get(day.isoformat())

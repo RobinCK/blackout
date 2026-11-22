@@ -46,6 +46,7 @@ def _day(coordinator: QueueCoordinator, day: date, now: datetime) -> dict[str, A
         "start": day_start(day).isoformat(),
         "status": schedule.status.value,
         "slots": [slot.value for slot in schedule.slots],
+        "planned": [slot.value for slot in coordinator.history.planned(day, schedule.slots)],
         "updated_at": _iso(schedule.updated_at),
         "versions": coordinator.history.versions(day),
         "outage_hours": outage_hours(schedule) if published else None,

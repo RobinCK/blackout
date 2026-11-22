@@ -9,7 +9,14 @@ import {
   socAt,
   type BatteryState,
 } from '../data/battery';
-import { clipSegments, HOUR_MS, SLOT_MS, slotSegments, toPercent } from '../data/timeline';
+import {
+  clipSegments,
+  HOUR_MS,
+  plannedDay,
+  SLOT_MS,
+  slotSegments,
+  toPercent,
+} from '../data/timeline';
 import { DEFAULT_TIMELINE_HOURS, DEFAULT_TIMELINE_OFFSET } from '../defaults';
 import { barStyles } from '../styles';
 import type { StatGroup, StatKey, StatusCardConfig } from '../types/config';
@@ -365,28 +372,24 @@ export class BlackoutStatusCard extends BlackoutBaseCard<StatusCardConfig> {
     const from = Math.floor((now - offset * HOUR_MS) / HOUR_MS) * HOUR_MS;
     const to = from + hours * HOUR_MS;
     const hasGrid = payload.grid !== null;
-    const segments: BarSegment[] = clipSegments(slotSegments(payload.days), from, to).flatMap(
-      (segment): BarSegment[] => {
-        if (!hasGrid || segment.state !== 'off' || segment.start >= now) {
-          return [{ from: segment.start, to: segment.end, className: slotClass(segment, now) }];
-        }
-
-        const skipped = {
-          from: segment.start,
-          to: Math.min(segment.end, now),
-          className: 'fill-skipped',
-        };
-
-        if (segment.end <= now) {
-          return [skipped];
-        }
-
-        return [
-          skipped,
-          { from: now, to: segment.end, className: slotClass({ ...segment, start: now }, now) },
-        ];
-      },
-    );
+    const scheduled = (start: number, end: number): BarSegment[] =>
+      clipSegments(slotSegments(payload.days), start, end).map((segment) => ({
+        from: segment.start,
+        to: segment.end,
+        className: slotClass(segment, now),
+      }));
+    const planned = clipSegments(
+      slotSegments(payload.days.map(plannedDay)),
+      from,
+      Math.min(now, to),
+    ).map((segment) => ({
+      from: segment.start,
+      to: segment.end,
+      className: segment.state === 'off' ? 'fill-skipped' : slotClass(segment, now),
+    }));
+    const segments: BarSegment[] = hasGrid
+      ? [...planned, ...scheduled(Math.max(now, from), to)]
+      : scheduled(from, to);
 
     segments.push(
       ...this.actualSegments(

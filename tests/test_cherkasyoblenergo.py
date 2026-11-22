@@ -42,8 +42,6 @@ def _mock(aioclient_mock: AiohttpClientMocker) -> None:
     for slug, payload in load_fixture("cherkasyoblenergo_posts.json").items():
         aioclient_mock.get(DETAIL_URL.format(slug), json=payload)
 
-    aioclient_mock.get(DETAIL_URL.format("onovleno-na-23-lystopada"), status=404)
-
 
 @pytest.mark.parametrize(
     ("title", "published", "expected"),
@@ -93,11 +91,11 @@ async def test_tables_cancellations_and_skipped_posts(hass: HomeAssistant, aiocl
     requested = {str(url) for _method, url, _data, _headers in aioclient_mock.mock_calls}
 
     assert encode_slots(feed.group_days("5.1")[date(2026, 11, 23)].slots) == _off((0, 4), (25, 30))
-    assert encode_slots(feed.group_days("5.2")[date(2026, 11, 23)].slots) == _off((4, 8))
+    assert encode_slots(feed.group_days("5.2")[date(2026, 11, 23)].slots) == _off((4, 8), (36, 40))
     assert feed.group_days("1.1")[date(2026, 11, 23)].status == DayStatus.NO_OUTAGES
     assert all(feed.group_days(group)[date(2026, 11, 24)].status == DayStatus.NO_OUTAGES for group in feed.groups)
     assert date(2026, 11, 21) not in feed.group_days("5.1")
-    assert feed.updated_at == datetime(2026, 11, 22, 21, 0, tzinfo=KYIV)
+    assert feed.updated_at == datetime(2026, 11, 22, 21, 10, tzinfo=KYIV)
     assert DETAIL_URL.format("uvaha-shakhrayi") not in requested
     assert DETAIL_URL.format("statystyka-zhovten") not in requested
     assert DETAIL_URL.format("hrafik-na-21-lystopada") not in requested
@@ -110,4 +108,34 @@ async def test_unavailable_posts(hass: HomeAssistant, aioclient_mock: AiohttpCli
         aioclient_mock.get(DETAIL_URL.format(item["slug"]), status=503)
 
     with pytest.raises(SourceError):
+        await CherkasyoblenergoSource().fetch(JsonFetcher(async_get_clientsession(hass)), NOW)
+
+
+async def test_short_failures_reuse_the_last_answers(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    source = CherkasyoblenergoSource()
+    session = async_get_clientsession(hass)
+    _mock(aioclient_mock)
+    first = await source.fetch(JsonFetcher(session), NOW)
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(LIST_URL, text="<html>Service Unavailable</html>")
+
+    for slug in load_fixture("cherkasyoblenergo_posts.json"):
+        aioclient_mock.get(DETAIL_URL.format(slug), status=503)
+
+    second = await source.fetch(JsonFetcher(session), NOW)
+
+    assert second.groups == first.groups
+
+
+async def test_a_post_never_read_fails_the_source(hass: HomeAssistant, aioclient_mock: AiohttpClientMocker) -> None:
+    _mock(aioclient_mock)
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(LIST_URL, json=load_fixture("cherkasyoblenergo_news.json"))
+
+    for slug, payload in load_fixture("cherkasyoblenergo_posts.json").items():
+        status = 503 if slug == "hrafik-na-22-lystopada" else 200
+        aioclient_mock.get(DETAIL_URL.format(slug), status=status, json=payload)
+
+    with pytest.raises(SourceError, match="hrafik-na-22-lystopada"):
         await CherkasyoblenergoSource().fetch(JsonFetcher(async_get_clientsession(hass)), NOW)

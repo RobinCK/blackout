@@ -62,6 +62,20 @@ export function outageWindows(day: QueueDay): Window[] {
     }));
 }
 
+export function plannedDay(day: QueueDay): QueueDay {
+  return day.planned ? { ...day, slots: day.planned } : day;
+}
+
+export function isRemoved(day: QueueDay, index: number): boolean {
+  return day.planned?.[index] === 'off' && day.slots[index] !== 'off';
+}
+
+export function removedWindows(day: QueueDay): Window[] {
+  const slots = day.slots.map((_, index): SlotState => (isRemoved(day, index) ? 'off' : 'on'));
+
+  return outageWindows({ ...day, slots });
+}
+
 export function stateAt(days: readonly QueueDay[], moment: number): SlotState {
   const segment = slotSegments(days).find((s) => s.start <= moment && moment < s.end);
 

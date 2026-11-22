@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import html
 import re
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -38,6 +39,7 @@ POSTS_URL = "https://www.cherkasyoblenergo.com/api/v1/posts"
 LIST_URL = f"{POSTS_URL}/category/news?lang=uk&page=0&size=20"
 DETAIL_URL = POSTS_URL + "/{}?lang=uk"
 TTL = 300
+STALE_LISTING = 1800
 GROUPS = tuple(f"{queue}.{sub}" for queue in range(1, 7) for sub in (1, 2))
 DAY_MINUTES = 24 * 60
 
@@ -280,8 +282,14 @@ def build_feed(posts: Sequence[Post], source: str) -> FeedResult:
 
 
 class CherkasyoblenergoSource(ScheduleSource):
+    """Every post of the day is needed for its schedule, so a short failure reuses the last answers."""
+
     name = "cherkasyoblenergo.com"
     official = True
+
+    def __init__(self) -> None:
+        self._listing: tuple[float, list[Summary]] | None = None
+        self._bodies: dict[str, Any] = {}
 
     @property
     def key(self) -> str:
@@ -289,23 +297,42 @@ class CherkasyoblenergoSource(ScheduleSource):
 
     async def fetch(self, http: JsonFetcher, now: datetime) -> FeedResult:
         today = now.astimezone(KYIV).date()
-        summaries = [item for item in parse_listing(await http.get_json(LIST_URL, TTL)) if item.day >= today]
+        summaries = [item for item in await self._summaries(http) if item.day >= today]
         bodies = await asyncio.gather(*(self._detail(http, item.slug) for item in summaries))
+        missing = [summary.slug for summary, body in zip(summaries, bodies, strict=True) if body is None]
 
-        if summaries and all(body is None for body in bodies):
-            raise SourceError("posts are unavailable")
+        if missing:
+            raise SourceError(f"posts are unavailable: {', '.join(missing)}")
 
+        self._bodies = {summary.slug: self._bodies[summary.slug] for summary in summaries}
         posts = [
             post
             for summary, body in zip(summaries, bodies, strict=True)
-            if body is not None and (post := parse_post(summary, body)) is not None
+            if (post := parse_post(summary, body)) is not None
         ]
 
         return build_feed(posts, self.name)
 
-    @staticmethod
-    async def _detail(http: JsonFetcher, slug: str) -> Any:
+    async def _summaries(self, http: JsonFetcher) -> list[Summary]:
         try:
-            return await http.get_json(DETAIL_URL.format(quote(slug, safe="")), TTL)
+            summaries = parse_listing(await http.get_json(LIST_URL, TTL))
         except SourceError:
-            return None
+            if self._listing is None or time.monotonic() - self._listing[0] > STALE_LISTING:
+                raise
+
+            return self._listing[1]
+
+        self._listing = (time.monotonic(), summaries)
+
+        return summaries
+
+    async def _detail(self, http: JsonFetcher, slug: str) -> Any:
+        try:
+            body = await http.get_json(DETAIL_URL.format(quote(slug, safe="")), TTL)
+        except SourceError:
+            return self._bodies.get(slug)
+
+        if isinstance(_content(body), str):
+            self._bodies[slug] = body
+
+        return self._bodies.get(slug)

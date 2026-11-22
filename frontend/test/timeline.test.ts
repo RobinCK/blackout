@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { clipSegments, outageWindows, slotSegments, stateAt } from '../src/data/timeline';
+import {
+  clipSegments,
+  isRemoved,
+  outageWindows,
+  plannedDay,
+  removedWindows,
+  slotSegments,
+  stateAt,
+} from '../src/data/timeline';
 import type { QueueDay, SlotState } from '../src/types/payload';
 
 function day(date: string, start: string, slots: string): QueueDay {
@@ -54,5 +62,21 @@ describe('timeline', () => {
     const clipped = clipSegments(slotSegments([TODAY]), from, from + 2 * 3_600_000);
 
     expect(clipped[0]?.start).toBe(from);
+  });
+
+  it('keeps outages that were removed from the schedule', () => {
+    const planned = day(
+      '2026-11-14',
+      '2026-11-14T00:00:00+02:00',
+      '1'.repeat(28) + '0'.repeat(6) + '1'.repeat(2) + '0'.repeat(6) + '1'.repeat(6),
+    );
+    const current: QueueDay = { ...TODAY, planned: planned.slots };
+    const removed = removedWindows(current);
+
+    expect(isRemoved(current, 28)).toBe(true);
+    expect(isRemoved(current, 36)).toBe(false);
+    expect(removed.map((window) => (window.end - window.start) / 3_600_000)).toEqual([3]);
+    expect(outageWindows(plannedDay(current))).toHaveLength(2);
+    expect(removedWindows(TODAY)).toEqual([]);
   });
 });

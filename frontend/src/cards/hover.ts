@@ -1,4 +1,4 @@
-import { SLOT_MS, slotSegments } from '../data/timeline';
+import { plannedDay, SLOT_MS, slotSegments, stateAt } from '../data/timeline';
 import type { SlotState } from '../types/payload';
 import type { RenderContext } from './base-card';
 import { windowText } from './parts';
@@ -76,6 +76,15 @@ function scheduleLine(
 
   if (state === 'unknown' && optional) {
     return null;
+  }
+
+  if (state !== 'off' && stateAt(payload.days.map(plannedDay), slot) === 'off') {
+    const label = t('legend.removed');
+
+    return {
+      swatch: 'skipped',
+      text: prefix ? `${t('hover.schedule')}: ${label}` : capitalize(label),
+    };
   }
 
   const range =

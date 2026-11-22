@@ -2,7 +2,14 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 
 import { WEEK_CARD_TYPE } from '../const';
 import { batteryEntities, readBattery, runtimeMs, socAt } from '../data/battery';
-import { HOUR_MS, outageWindows, SLOT_MS, toPercent } from '../data/timeline';
+import {
+  HOUR_MS,
+  outageWindows,
+  plannedDay,
+  removedWindows,
+  SLOT_MS,
+  toPercent,
+} from '../data/timeline';
 import { DEFAULT_WEEK_DAYS } from '../defaults';
 import { barStyles } from '../styles';
 import type { WeekCardConfig } from '../types/config';
@@ -225,17 +232,25 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
     const from = Date.parse(day.start);
     const to = from + 24 * HOUR_MS;
     const showSchedule = this.config?.show_schedule !== false;
-    const windows = showSchedule && day.status !== 'waiting' ? outageWindows(day) : [];
+    const published = showSchedule && day.status !== 'waiting';
+    const windows = published ? outageWindows(day) : [];
 
     if (!hasGrid) {
-      return windows.map((window) => ({
-        from: window.start,
-        to: window.end,
-        className: window.possible ? 'fill-possible' : 'fill-actual',
-      }));
+      return [
+        ...(published ? removedWindows(day) : []).map((window) => ({
+          from: window.start,
+          to: window.end,
+          className: 'fill-skipped',
+        })),
+        ...windows.map((window) => ({
+          from: window.start,
+          to: window.end,
+          className: window.possible ? 'fill-possible' : 'fill-actual',
+        })),
+      ];
     }
 
-    const skipped = windows
+    const skipped = (published ? outageWindows(plannedDay(day)) : [])
       .filter((window) => !window.possible && window.start < now)
       .map((window) => ({
         from: window.start,
@@ -311,7 +326,8 @@ export class BlackoutWeekCard extends BlackoutBaseCard<WeekCardConfig> {
       ${
         skipped
           ? html`<span class="legend-item"
-              ><span class="swatch skipped"></span>${t('legend.skipped')}</span
+              ><span class="swatch skipped"></span
+              >${t(hasGrid ? 'legend.skipped' : 'legend.removed')}</span
             >`
           : nothing
       }

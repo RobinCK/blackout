@@ -157,7 +157,10 @@ With a grid entity: `binary_sensor.<queue>_grid`, `sensor.<queue>_no_power_since
 Slot codes in attributes and events: `1` power on, `0` outage, `?` possible outage, `-` unknown.
 
 When a source is down and a fallback answers with an older version of a day than the one already
-known, the newer version stays, so a short failure does not roll the schedule back.
+known, the newer version stays, so a short failure does not roll the schedule back. A new version of
+today changes only the half hours from the current one on: what was planned for the past stays as it
+was. Every version is kept, and an outage that was in a version published before its time stays visible
+as planned even after a later update removed it.
 
 ## Notifications
 
@@ -325,9 +328,10 @@ days: 7
 | `battery` | — | |
 
 With a grid entity, solid bars are actual outages, hatching on a dark track is the schedule still ahead and
-hatching on green marks scheduled time when the power stayed on. The status card timeline marks the
-past part of a scheduled outage the same way. Without a grid entity the card shows the schedule of
-each day instead of actual outages.
+hatching on green marks scheduled time when the power stayed on, including outages that a later update
+removed from the schedule. The status card timeline marks the past part of a scheduled outage the same
+way. Without a grid entity the card shows the schedule of each day instead of actual outages, and
+hatching marks outages removed from the schedule. The schedule card marks removed outages the same way.
 
 ### Records card
 
@@ -453,7 +457,7 @@ minimum, maximum and mean. `entity` is optional and adds the outages of the queu
   "grid": { "present": true, "since": "…" },
   "source": { "name": "OE_OUTAGE_DATA", "ok": true, "last_success": "…", "last_error": null, "fetched_at": "…" },
   "days": [
-    { "date": "2026-11-14", "status": "schedule", "slots": ["on", "off", "…"], "updated_at": "…", "versions": 2, "outage_hours": 10, "possible_hours": 0, "longest_hours": 3, "actual": [{ "start": "…", "end": "…", "hours": 1.5 }], "actual_hours": 1.5 }
+    { "date": "2026-11-14", "status": "schedule", "slots": ["on", "off", "…"], "planned": ["on", "off", "…"], "updated_at": "…", "versions": 2, "outage_hours": 10, "possible_hours": 0, "longest_hours": 3, "actual": [{ "start": "…", "end": "…", "hours": 1.5 }], "actual_hours": 1.5 }
   ],
   "summary": { "days": 7, "actual_hours": 14.3, "count": 6, "longest": { "start": "…", "end": "…", "hours": 4.1 }, "availability": 91.5 },
   "records": { "longest_outage": { "…": "…" }, "worst_day": { "date": "…", "hours": 9 }, "longest_power_streak": { "…": "…" }, "current_power_streak": { "…": "…" }, "count": 42 }

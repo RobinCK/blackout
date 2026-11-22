@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -42,6 +42,7 @@ from .models import (
     RegionStatus,
     SlotState,
     empty_slots,
+    slot_index,
 )
 from .names import EntityNames
 from .regions import Region, get_region
@@ -59,6 +60,22 @@ def pick_schedule(fresh: DaySchedule | None, before: DaySchedule | None) -> DayS
         return before
 
     return fresh
+
+
+def keep_past(fresh: DaySchedule | None, before: DaySchedule | None, cut: int) -> DaySchedule | None:
+    """A new version of today changes only the half hours from the current one on."""
+    published = (DayStatus.SCHEDULE, DayStatus.NO_OUTAGES)
+
+    if fresh is None or before is None or fresh is before:
+        return fresh
+
+    if fresh.status not in published or before.status not in published:
+        return fresh
+
+    slots = before.slots[:cut] + fresh.slots[cut:]
+    status = DayStatus.SCHEDULE if SlotState.OFF in slots else DayStatus.NO_OUTAGES
+
+    return replace(fresh, slots=slots, status=status)
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,7 +199,11 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
         for day in days_wanted:
             fresh = feed.group_days(self.group).get(day) if feed else None
             before = previous.days.get(day)
-            days[day] = pick_schedule(fresh, before) or DaySchedule(day, empty_slots(), DayStatus.WAITING)
+            chosen = pick_schedule(fresh, before)
+            chosen = keep_past(chosen, before, slot_index(now)) if day == today else chosen
+            days[day] = chosen or DaySchedule(day, empty_slots(), DayStatus.WAITING)
+
+        kept = all(days[day] is previous.days.get(day) for day in days_wanted)
 
         self.changes = self._detect_changes(previous, days)
         self._record(days.values(), now)
@@ -192,7 +213,7 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
 
         return QueueData(
             days=days,
-            source=feed.source if feed else None,
+            source=previous.source if kept and previous.source else feed.source if feed else None,
             feed_emergency=feed.emergency if feed else None,
             region=region_state,
             fetched_at=now,
