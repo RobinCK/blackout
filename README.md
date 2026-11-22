@@ -43,6 +43,8 @@ picker.
 - History of schedules (with every published version) and of actual outages in Home Assistant
   storage, with configurable retention.
 - Calendar of scheduled outages, events when a schedule is published or changed.
+- A notifications blueprint: a schedule published or changed, emergency outages, and reminders before
+  an outage and before the power comes back.
 - A websocket API that gives cards everything about a queue in one call.
 - Four dashboard cards (status, schedule, last days, records) with a visual editor, light and dark
   themes, English and Ukrainian texts and your own text and color overrides.
@@ -153,6 +155,31 @@ With a grid entity: `binary_sensor.<queue>_grid`, `sensor.<queue>_no_power_since
 `sensor.<queue>_actual_outage_today` and `sensor.<queue>_availability_7_days`.
 
 Slot codes in attributes and events: `1` power on, `0` outage, `?` possible outage, `-` unknown.
+
+When a source is down and a fallback answers with an older version of a day than the one already
+known, the newer version stays, so a short failure does not roll the schedule back.
+
+## Notifications
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FRobinCK%2Fblackout%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Fblackout%2Fnotifications.yaml)
+
+Import the blueprint with the button above, then create an automation from it for each queue.
+
+| Input | Default | |
+| --- | --- | --- |
+| Schedule event | — | `event.<queue>_schedule` |
+| Emergency outages | — | `binary_sensor.<queue>_emergency_outages` |
+| Next outage | — | `sensor.<queue>_next_outage`, needed by both reminders |
+| Power back | — | `sensor.<queue>_power_back`, needed by the reminder before the power comes back |
+| Notify action | — | for example `notify.mobile_app_my_phone` or a notify group |
+| Language | `en` | `en` or `uk` |
+| Schedule published | on | the schedule of a day appeared, usually tomorrow's |
+| Schedule changed | on | a published schedule was updated |
+| Emergency outages | on | emergency outages were introduced |
+| Before an outage, minutes | `0` | reminder before a scheduled outage, `0` turns it off |
+| Before the power comes back, minutes | `0` | reminder before the power comes back by schedule, sent only during an outage, `0` turns it off |
+
+The title starts with the name of the queue device, so notifications of several queues stay apart.
 
 ## Cards
 

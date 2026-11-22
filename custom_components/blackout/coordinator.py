@@ -50,6 +50,17 @@ from .timeline import ScheduledOutage, merged_outages, slot_at
 _LOGGER = logging.getLogger(__name__)
 
 
+def pick_schedule(fresh: DaySchedule | None, before: DaySchedule | None) -> DaySchedule | None:
+    """The fresh version of a day, unless it was published before the one already known."""
+    if fresh is None or before is None or before.status == DayStatus.WAITING:
+        return fresh or before
+
+    if fresh.updated_at and before.updated_at and fresh.updated_at < before.updated_at:
+        return before
+
+    return fresh
+
+
 @dataclass(frozen=True, slots=True)
 class DayChange:
     day: date
@@ -170,7 +181,8 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
 
         for day in days_wanted:
             fresh = feed.group_days(self.group).get(day) if feed else None
-            days[day] = fresh or previous.days.get(day) or DaySchedule(day, empty_slots(), DayStatus.WAITING)
+            before = previous.days.get(day)
+            days[day] = pick_schedule(fresh, before) or DaySchedule(day, empty_slots(), DayStatus.WAITING)
 
         self.changes = self._detect_changes(previous, days)
         self._record(days.values(), now)

@@ -1,0 +1,253 @@
+blueprint:
+  name: Blackout notifications
+  description: >-
+    Notifications for one Blackout queue: a schedule published for a day, a published schedule changed,
+    emergency outages introduced, and optional reminders before a scheduled outage and before the power
+    comes back.
+  domain: automation
+  source_url: https://github.com/RobinCK/blackout/blob/main/blueprints/automation/blackout/notifications.yaml
+  homeassistant:
+    min_version: "2025.6.0"
+  input:
+    queue:
+      name: Queue
+      icon: mdi:flash-off
+      input:
+        schedule_event:
+          name: Schedule event
+          description: The "Schedule" event entity of the queue.
+          selector:
+            entity:
+              filter:
+                - integration: blackout
+                  domain: event
+        emergency_sensor:
+          name: Emergency outages
+          description: The "Emergency outages" binary sensor of the queue.
+          selector:
+            entity:
+              filter:
+                - integration: blackout
+                  domain: binary_sensor
+                  device_class: problem
+        next_outage_sensor:
+          name: Next outage
+          description: The "Next outage" sensor of the queue, used by the reminders.
+          default: ""
+          selector:
+            entity:
+              filter:
+                - integration: blackout
+                  domain: sensor
+                  device_class: timestamp
+        power_back_sensor:
+          name: Power back
+          description: The "Power back" sensor of the queue, used by the reminder before the power comes back.
+          default: ""
+          selector:
+            entity:
+              filter:
+                - integration: blackout
+                  domain: sensor
+                  device_class: timestamp
+    delivery:
+      name: Delivery
+      icon: mdi:bell-ring
+      input:
+        notify_action:
+          name: Notify action
+          description: The notify action to call, for example notify.mobile_app_my_phone or a notify group.
+          selector:
+            text:
+        language:
+          name: Language
+          default: en
+          selector:
+            select:
+              mode: dropdown
+              options:
+                - label: English
+                  value: en
+                - label: Українська
+                  value: uk
+    events:
+      name: What to notify about
+      icon: mdi:calendar-alert
+      input:
+        notify_published:
+          name: Schedule published
+          description: The schedule of a day appeared, usually the one for tomorrow.
+          default: true
+          selector:
+            boolean:
+        notify_changed:
+          name: Schedule changed
+          description: A published schedule was updated.
+          default: true
+          selector:
+            boolean:
+        notify_emergency:
+          name: Emergency outages
+          description: Emergency outages were introduced, so the schedule does not apply.
+          default: true
+          selector:
+            boolean:
+        outage_reminder:
+          name: Before an outage, minutes
+          description: Remind this many minutes before a scheduled outage. 0 turns the reminder off.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 180
+              step: 5
+              unit_of_measurement: min
+              mode: box
+        power_on_reminder:
+          name: Before the power comes back, minutes
+          description: Remind this many minutes before the power comes back by schedule. 0 turns the reminder off.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 180
+              step: 5
+              unit_of_measurement: min
+              mode: box
+
+mode: queued
+max: 10
+
+trigger_variables:
+  next_outage_entity: !input next_outage_sensor
+  power_back_entity: !input power_back_sensor
+  outage_lead: !input outage_reminder
+  power_lead: !input power_on_reminder
+
+triggers:
+  - trigger: state
+    id: schedule
+    entity_id: !input schedule_event
+    not_from:
+      - unavailable
+      - unknown
+  - trigger: state
+    id: emergency
+    entity_id: !input emergency_sensor
+    from: "off"
+    to: "on"
+  - trigger: template
+    id: outage_soon
+    value_template: >-
+      {% set at = states(next_outage_entity) | as_datetime(none) %}
+      {{ outage_lead | int(0) > 0 and at is not none
+         and now() >= at - timedelta(minutes=outage_lead | int(0)) and now() < at }}
+  - trigger: template
+    id: power_soon
+    value_template: >-
+      {% set at = states(power_back_entity) | as_datetime(none) %}
+      {% set next = states(next_outage_entity) | as_datetime(none) %}
+      {{ power_lead | int(0) > 0 and at is not none and (next is none or next > at)
+         and now() >= at - timedelta(minutes=power_lead | int(0)) and now() < at }}
+
+variables:
+  notify_action: !input notify_action
+  language: !input language
+  notify_published: !input notify_published
+  notify_changed: !input notify_changed
+  notify_emergency: !input notify_emergency
+  event_entity: !input schedule_event
+  texts:
+    en:
+      published: Schedule for {day}
+      changed: Schedule for {day} changed
+      today: today
+      tomorrow: tomorrow
+      outages: "Outages: {list} ({hours} h)"
+      no_outages: No outages
+      emergency_title: Emergency outages
+      emergency: Emergency outages are in effect, the schedule does not apply.
+      outage_title: Outage in {minutes} min
+      outage: Power goes off at {time} by schedule.
+      power_title: Power back in {minutes} min
+      power: Power comes back at {time} by schedule.
+    uk:
+      published: Графік на {day}
+      changed: Графік на {day} змінено
+      today: сьогодні
+      tomorrow: завтра
+      outages: "Відключення: {list} ({hours} год)"
+      no_outages: Без відключень
+      emergency_title: Аварійні відключення
+      emergency: Введено аварійні відключення, графік не діє.
+      outage_title: Відключення через {minutes} хв
+      outage: За графіком світло вимкнуть о {time}.
+      power_title: Світло через {minutes} хв
+      power: За графіком світло увімкнуть о {time}.
+  text: "{{ texts[language] if language in texts else texts.en }}"
+  queue_name: >-
+    {% set device = device_id(event_entity) %}
+    {{ (device_attr(device, 'name_by_user') or device_attr(device, 'name') or '') if device else '' }}
+
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: schedule
+          - condition: template
+            value_template: >-
+              {% set type = trigger.to_state.attributes.event_type %}
+              {{ type == 'schedule_published' and notify_published
+                 or type == 'schedule_changed' and notify_changed }}
+        sequence:
+          - action: "{{ notify_action }}"
+            data:
+              title: >-
+                {% set event = trigger.to_state.attributes %}
+                {% set day = text.today if event.day == 'today' else text.tomorrow if event.day == 'tomorrow'
+                   else event.date[8:10] ~ '.' ~ event.date[5:7] %}
+                {% set title = text.published if event.event_type == 'schedule_published' else text.changed %}
+                {{ queue_name ~ ' · ' if queue_name else '' }}{{ title | replace('{day}', day) }}
+              message: >-
+                {% set event = trigger.to_state.attributes %}
+                {% set hours = '%g' | format(event.hours | float(0) | round(1)) %}
+                {% set hours = hours | replace('.', ',') if language == 'uk' else hours %}
+                {% if event.outages | default([]) | count > 0 %}
+                  {{ text.outages | replace('{list}', event.outages | join(', ')) | replace('{hours}', hours) }}
+                {% else %}
+                  {{ text.no_outages }}
+                {% endif %}
+      - conditions:
+          - condition: trigger
+            id: emergency
+          - condition: template
+            value_template: "{{ notify_emergency }}"
+        sequence:
+          - action: "{{ notify_action }}"
+            data:
+              title: "{{ queue_name ~ ' · ' if queue_name else '' }}{{ text.emergency_title }}"
+              message: "{{ text.emergency }}"
+      - conditions:
+          - condition: trigger
+            id: outage_soon
+        sequence:
+          - action: "{{ notify_action }}"
+            data:
+              title: >-
+                {% set at = states(next_outage_entity) | as_datetime %}
+                {% set minutes = ((at - now()).total_seconds() / 60) | round(0, 'ceil') | int %}
+                {{ queue_name ~ ' · ' if queue_name else '' }}{{ text.outage_title | replace('{minutes}', minutes) }}
+              message: >-
+                {{ text.outage | replace('{time}', as_local(states(next_outage_entity) | as_datetime).strftime('%H:%M')) }}
+      - conditions:
+          - condition: trigger
+            id: power_soon
+        sequence:
+          - action: "{{ notify_action }}"
+            data:
+              title: >-
+                {% set at = states(power_back_entity) | as_datetime %}
+                {% set minutes = ((at - now()).total_seconds() / 60) | round(0, 'ceil') | int %}
+                {{ queue_name ~ ' · ' if queue_name else '' }}{{ text.power_title | replace('{minutes}', minutes) }}
+              message: >-
+                {{ text.power | replace('{time}', as_local(states(power_back_entity) | as_datetime).strftime('%H:%M')) }}
