@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from .sources.base import ScheduleSource
-from .sources.cherkasyoblenergo_api import CherkasyoblenergoApiSource
+from .sources.cherkasyoblenergo import CherkasyoblenergoSource
 from .sources.dtek_mirror import DtekMirrorSource
 from .sources.mykolaiv import MykolaivSource
 from .sources.svitlo_live import SvitloLiveSource
@@ -81,7 +81,7 @@ REGIONS: tuple[Region, ...] = (
         "cherkasy",
         "Cherkasyoblenergo",
         STANDARD_GROUPS,
-        (CherkasyoblenergoApiSource(), _oblenergo("Cherkasyoblenergo"), SvitloLiveSource("cherkaska-oblast")),
+        (CherkasyoblenergoSource(), _oblenergo("Cherkasyoblenergo"), SvitloLiveSource("cherkaska-oblast")),
         "cherkasy",
     ),
     Region(

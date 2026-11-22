@@ -25,7 +25,7 @@ from custom_components.blackout.const import (
 )
 from custom_components.blackout.payload import build_payload
 from custom_components.blackout.regions import OE_OUTAGE_DATA
-from custom_components.blackout.sources import cherkasyoblenergo_api, svitlo_live, ua_power_status
+from custom_components.blackout.sources import cherkasyoblenergo, svitlo_live, ua_power_status
 
 from .conftest import load_fixture
 
@@ -34,7 +34,7 @@ GRID = "binary_sensor.deye_master_grid_connected"
 
 
 def _mock_sources(aioclient_mock: AiohttpClientMocker, *, mirror: Any = None) -> None:
-    aioclient_mock.get(cherkasyoblenergo_api.URL, status=503)
+    aioclient_mock.get(cherkasyoblenergo.LIST_URL, status=503)
     aioclient_mock.get(
         OE_OUTAGE_DATA.format("Cherkasyoblenergo"),
         json=mirror if mirror is not None else load_fixture("dtek_cherkasy.json"),
@@ -110,7 +110,7 @@ async def test_fallback_to_second_source(
     source = hass.states.get("binary_sensor.home_data_source")
 
     assert source.attributes["source"] == "svitlo.live"
-    assert source.attributes["source_errors"] == ["cherkasyoblenergo-api: HTTP 503"]
+    assert source.attributes["source_errors"] == ["cherkasyoblenergo.com: HTTP 503"]
     assert source.attributes["sources_without_today"] == ["OE_OUTAGE_DATA"]
     assert hass.states.get("sensor.home_next_outage").state == "2026-11-14T16:00:00+00:00"
 
