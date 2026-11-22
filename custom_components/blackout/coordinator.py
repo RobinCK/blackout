@@ -92,6 +92,8 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
         self.fetches = 0
         self.last_error: str | None = None
         self.last_success: datetime | None = None
+        self.source_errors: list[str] = []
+        self.sources_without_today: list[str] = []
         self._unsubscribers: list[Callable[[], None]] = []
 
     @property
@@ -157,6 +159,12 @@ class QueueCoordinator(DataUpdateCoordinator[QueueData]):
             if feed is None:
                 self.last_error = "; ".join(answer.errors) or "no source answered"
                 raise UpdateFailed(self.last_error)
+
+            if answer.errors and answer.errors != self.source_errors:
+                _LOGGER.warning("Queue %s: %s; using %s", self.group, "; ".join(answer.errors), feed.source)
+
+            self.source_errors = answer.errors
+            self.sources_without_today = answer.skipped
 
         days: dict[date, DaySchedule] = {}
 

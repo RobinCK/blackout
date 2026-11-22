@@ -22,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 class ScheduleAnswer:
     feed: FeedResult | None
     errors: list[str] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)
 
 
 class BlackoutHub:
@@ -45,6 +46,7 @@ class BlackoutHub:
 
                 return answer
 
+            answer.skipped.append(source.name)
             answer.feed = answer.feed or feed
 
         if answer.errors:

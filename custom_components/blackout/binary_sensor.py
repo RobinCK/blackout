@@ -103,6 +103,8 @@ class QueueBinarySensor(QueueEntity, BinarySensorEntity):
                 "source": coordinator.data.source if coordinator.data else None,
                 "last_success": coordinator.last_success.isoformat() if coordinator.last_success else None,
                 "last_error": coordinator.last_error,
+                "source_errors": coordinator.source_errors,
+                "sources_without_today": coordinator.sources_without_today,
             }
 
         if self.entity_description.key == "grid" and coordinator.grid:

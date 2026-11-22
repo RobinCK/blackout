@@ -110,6 +110,8 @@ async def test_fallback_to_second_source(
     source = hass.states.get("binary_sensor.home_data_source")
 
     assert source.attributes["source"] == "svitlo.live"
+    assert source.attributes["source_errors"] == ["cherkasyoblenergo-api: HTTP 503"]
+    assert source.attributes["sources_without_today"] == ["OE_OUTAGE_DATA"]
     assert hass.states.get("sensor.home_next_outage").state == "2026-11-14T16:00:00+00:00"
 
 

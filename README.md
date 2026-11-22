@@ -142,7 +142,7 @@ entity names** option.
 | `binary_sensor.<queue>_scheduled_outage_now` | on during a scheduled outage |
 | `binary_sensor.<queue>_possible_outage_now` | on during a possible outage (disabled by default) |
 | `binary_sensor.<queue>_emergency_outages` | on while emergency outages apply |
-| `binary_sensor.<queue>_data_source` | whether the last update succeeded, with the source name (diagnostic) |
+| `binary_sensor.<queue>_data_source` | whether the last update succeeded, with the source name, errors of the sources tried before it (`source_errors`) and sources without today's schedule (`sources_without_today`); a failing source is also logged as a warning (diagnostic) |
 | `calendar.<queue>_outage_schedule` | scheduled outages, history included |
 | `event.<queue>_schedule` | `schedule_published`, `schedule_changed` with `date`, `slots`, `outages`, `hours` |
 
